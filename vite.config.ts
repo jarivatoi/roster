@@ -3,6 +3,6 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/mit/',
+  base: '/roster/',
   server: { host: true }
 })
