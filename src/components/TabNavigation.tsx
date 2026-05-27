@@ -3,7 +3,7 @@ import { gsap } from 'gsap';
 import { Calendar, Settings, Database, User } from 'lucide-react';
 
 interface Tab {
-  id: string;
+  id: 'calendar' | 'settings' | 'data' | 'profile';
   icon: React.ComponentType<{ className?: string }>;
   label: string;
 }
@@ -40,6 +40,10 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
           transform: translateY(-1px);
         }
       }
+      
+      .icon-pulse {
+        animation: iconPulse 2s ease-in-out infinite;
+      }
     `;
     document.head.appendChild(style);
     
@@ -58,7 +62,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
     setLocalActiveTab(activeTab);
   }, [activeTab]);
   
-  const handleTabClick = (tabId: string) => {
+  const handleTabClick = (tabId: 'calendar' | 'settings' | 'data' | 'profile') => {
     // Always allow tab changes for instant responsiveness
     if (tabId === localActiveTab) return;
     
@@ -108,7 +112,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
     onTabChange(tabId);
   };
   
-  const handleTouchStart = (tabId: string) => {
+  const handleTouchStart = (tabId: 'calendar' | 'settings' | 'data' | 'profile') => {
     // Always allow tab changes for instant responsiveness
     if (tabId === localActiveTab) return;
     
@@ -151,7 +155,7 @@ const tabs: Tab[] = [
   const showBackground = backgroundIndex !== -1;
 
   return (
-    <div className="w-full">
+    <div className="w-full" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
       <div className="relative bg-white/90 backdrop-blur-md shadow-lg border-b border-gray-200/50 p-2" style={{
         width: '100vw',
         marginLeft: 'calc(-50vw + 50%)',
@@ -188,7 +192,6 @@ const tabs: Tab[] = [
             const Icon = tab.icon;
             const isActive = tab.id === activeTab;
             const isHovered = hoveredTab === tab.id;
-            const showText = isActive || isHovered;
             
             return (
               <button
@@ -198,40 +201,28 @@ const tabs: Tab[] = [
                 onTouchStart={() => handleTouchStart(tab.id)}
                 onMouseEnter={() => setHoveredTab(tab.id)}
                 onMouseLeave={() => setHoveredTab(null)}
-                className="relative h-12 flex items-center transition-all duration-200 rounded-xl overflow-hidden px-2 pt-2"
+                className="relative h-16 flex flex-col items-center justify-center transition-all duration-200 rounded-xl overflow-hidden px-2 py-1"
                 style={{
                   // Critical: Fix touch events for mobile
                   touchAction: 'manipulation',
                   WebkitTapHighlightColor: 'transparent'
                 }}
               >
-                {/* Container for icon and text with dynamic justification */}
-                <div className={`flex items-center h-full w-full transition-all duration-300 ${
-                  showText ? 'justify-center space-x-1' : 'justify-center'
-                }`}>
-                  {/* Icon - always visible */}
-                  <Icon 
-                    className="tab-icon w-5 h-5 transition-all duration-300 flex-shrink-0 hover:scale-[1.4] active:scale-95"
-                    style={{
-                      color: isActive ? '#2563eb' : isHovered ? '#3b82f6' : '#4b5563',
-                      // Add subtle pulse animation for inactive icons to show they're clickable
-                      animation: !isActive ? 'iconPulse 2s ease-in-out infinite' : 'none'
-                    }}
-                  />
-                  
-                  {/* Text - slides in horizontally with width animation */}
-                  <div className={`overflow-hidden transition-all duration-300 ${
-                    showText ? 'max-w-[70px] opacity-100' : 'max-w-0 opacity-0'
-                  }`}>
-                    <span 
-                      className={`text-[10px] font-medium whitespace-nowrap block transition-all duration-300 ${
-                        isActive ? 'text-blue-600' : isHovered ? 'text-blue-500' : 'text-gray-600'
-                      }`}
-                    >
-                      {tab.label}
-                    </span>
-                  </div>
-                </div>
+                {/* Icon - always visible */}
+                <Icon 
+                  className={`tab-icon w-6 h-6 transition-all duration-300 flex-shrink-0 hover:scale-110 active:scale-95 mb-1 ${
+                    isActive ? 'text-blue-600' : isHovered ? 'text-blue-500' : 'text-gray-600 icon-pulse'
+                  }`}
+                />
+                
+                {/* Text - always visible at bottom */}
+                <span 
+                  className={`text-[10px] font-medium whitespace-nowrap transition-all duration-300 ${
+                    isActive ? 'text-blue-600' : isHovered ? 'text-blue-500' : 'text-gray-600'
+                  }`}
+                >
+                  {tab.label}
+                </span>
               </button>
             );
           })}
