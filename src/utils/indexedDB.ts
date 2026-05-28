@@ -55,7 +55,7 @@ interface DBSchema {
 class WorkScheduleDB {
   private db: IDBDatabase | null = null;
   private readonly dbName = 'WorkScheduleDB';
-  private readonly version = 6; // Incremented to apply new schema
+  private readonly version = 7; // Incremented to apply new schedule saving fix
   private initPromise: Promise<void> | null = null;
 
   async init(): Promise<void> {
@@ -181,7 +181,6 @@ class WorkScheduleDB {
 
       // Add transaction error handling
       transaction.onerror = () => {
-
         reject(new Error(`Transaction failed: ${transaction.error}`));
       };
       
@@ -189,46 +188,63 @@ class WorkScheduleDB {
         resolve();
       };
 
-      // Clear existing data
-      const clearRequest = store.clear();
+      // First, get all existing keys to remove any that are no longer in the schedule
+      const getAllRequest = store.getAllKeys();
       
-      clearRequest.onsuccess = () => {
-        // Add new data
+      getAllRequest.onsuccess = () => {
+        const existingKeys = getAllRequest.result;
+        const newKeys = Object.keys(schedule).filter(key => schedule[key].length > 0);
+        
+        // Remove keys that are no longer in the schedule
+        const keysToRemove = existingKeys.filter(key => !newKeys.includes(key as string));
+        
         let pendingOperations = 0;
         let completedOperations = 0;
         let hasError = false;
         
+        const checkCompletion = () => {
+          completedOperations++;
+          if (completedOperations === pendingOperations && !hasError) {
+            // All operations completed successfully
+          }
+        };
+        
+        // Remove old entries
+        keysToRemove.forEach(key => {
+          pendingOperations++;
+          const deleteRequest = store.delete(key);
+          deleteRequest.onsuccess = checkCompletion;
+          deleteRequest.onerror = () => {
+            if (!hasError) {
+              hasError = true;
+              reject(new Error(`Failed to delete schedule for ${key}: ${deleteRequest.error}`));
+            }
+          };
+        });
+        
+        // Add or update new entries
         Object.entries(schedule).forEach(([date, shifts]) => {
           if (shifts.length > 0) {
             pendingOperations++;
-            const addRequest = store.add({ date, shifts });
-            
-            addRequest.onsuccess = () => {
-              completedOperations++;
-              if (completedOperations === pendingOperations && !hasError) {
-                // All operations completed
-              }
-            };
-            
-            addRequest.onerror = () => {
+            const putRequest = store.put({ date, shifts });
+            putRequest.onsuccess = checkCompletion;
+            putRequest.onerror = () => {
               if (!hasError) {
                 hasError = true;
-
-                reject(new Error(`Failed to add schedule for ${date}: ${addRequest.error}`));
+                reject(new Error(`Failed to add schedule for ${date}: ${putRequest.error}`));
               }
             };
           }
         });
         
-        // If no data to save, resolve immediately
+        // If no operations needed, transaction will complete normally
         if (pendingOperations === 0) {
-
+          // No changes needed
         }
       };
 
-      clearRequest.onerror = () => {
-
-        reject(new Error(`Failed to clear schedule: ${clearRequest.error}`));
+      getAllRequest.onerror = () => {
+        reject(new Error(`Failed to get existing schedule keys: ${getAllRequest.error}`));
       };
     });
   }
@@ -263,7 +279,6 @@ class WorkScheduleDB {
 
       // Add transaction error handling
       transaction.onerror = () => {
-
         reject(new Error(`Transaction failed: ${transaction.error}`));
       };
       
@@ -271,46 +286,63 @@ class WorkScheduleDB {
         resolve();
       };
 
-      // Clear existing data
-      const clearRequest = store.clear();
+      // First, get all existing keys to remove any that are no longer special
+      const getAllRequest = store.getAllKeys();
       
-      clearRequest.onsuccess = () => {
-        // Add new data
+      getAllRequest.onsuccess = () => {
+        const existingKeys = getAllRequest.result;
+        const newKeys = Object.keys(specialDates).filter(key => specialDates[key] === true);
+        
+        // Remove keys that are no longer special dates
+        const keysToRemove = existingKeys.filter(key => !newKeys.includes(key as string));
+        
         let pendingOperations = 0;
         let completedOperations = 0;
         let hasError = false;
         
+        const checkCompletion = () => {
+          completedOperations++;
+          if (completedOperations === pendingOperations && !hasError) {
+            // All operations completed successfully
+          }
+        };
+        
+        // Remove old entries
+        keysToRemove.forEach(key => {
+          pendingOperations++;
+          const deleteRequest = store.delete(key);
+          deleteRequest.onsuccess = checkCompletion;
+          deleteRequest.onerror = () => {
+            if (!hasError) {
+              hasError = true;
+              reject(new Error(`Failed to delete special date for ${key}: ${deleteRequest.error}`));
+            }
+          };
+        });
+        
+        // Add or update new entries
         Object.entries(specialDates).forEach(([date, isSpecial]) => {
           if (isSpecial) {
             pendingOperations++;
-            const addRequest = store.add({ date, isSpecial });
-            
-            addRequest.onsuccess = () => {
-              completedOperations++;
-              if (completedOperations === pendingOperations && !hasError) {
-                // All operations completed
-              }
-            };
-            
-            addRequest.onerror = () => {
+            const putRequest = store.put({ date, isSpecial });
+            putRequest.onsuccess = checkCompletion;
+            putRequest.onerror = () => {
               if (!hasError) {
                 hasError = true;
-
-                reject(new Error(`Failed to add special date for ${date}: ${addRequest.error}`));
+                reject(new Error(`Failed to add special date for ${date}: ${putRequest.error}`));
               }
             };
           }
         });
-
-        // If no data to save, resolve immediately
+        
+        // If no operations needed, transaction will complete normally
         if (pendingOperations === 0) {
-          // No special dates to save
+          // No changes needed
         }
       };
 
-      clearRequest.onerror = () => {
-
-        reject(new Error(`Failed to clear special dates: ${clearRequest.error}`));
+      getAllRequest.onerror = () => {
+        reject(new Error(`Failed to get existing special dates keys: ${getAllRequest.error}`));
       };
     });
   }
@@ -457,7 +489,6 @@ class WorkScheduleDB {
       const store = transaction.objectStore('dateNotes');
 
       transaction.onerror = () => {
-
         reject(new Error(`Transaction failed: ${transaction.error}`));
       };
       
@@ -465,43 +496,63 @@ class WorkScheduleDB {
         resolve();
       };
 
-      const clearRequest = store.clear();
+      // First, get all existing keys to remove any that are no longer in dateNotes
+      const getAllRequest = store.getAllKeys();
       
-      clearRequest.onsuccess = () => {
+      getAllRequest.onsuccess = () => {
+        const existingKeys = getAllRequest.result;
+        const newKeys = Object.keys(dateNotes).filter(key => dateNotes[key] && dateNotes[key].trim() !== '');
+        
+        // Remove keys that are no longer in dateNotes
+        const keysToRemove = existingKeys.filter(key => !newKeys.includes(key as string));
+        
         let pendingOperations = 0;
         let completedOperations = 0;
         let hasError = false;
         
+        const checkCompletion = () => {
+          completedOperations++;
+          if (completedOperations === pendingOperations && !hasError) {
+            // All operations completed successfully
+          }
+        };
+        
+        // Remove old entries
+        keysToRemove.forEach(key => {
+          pendingOperations++;
+          const deleteRequest = store.delete(key);
+          deleteRequest.onsuccess = checkCompletion;
+          deleteRequest.onerror = () => {
+            if (!hasError) {
+              hasError = true;
+              reject(new Error(`Failed to delete date note for ${key}: ${deleteRequest.error}`));
+            }
+          };
+        });
+        
+        // Add or update new entries
         Object.entries(dateNotes).forEach(([date, note]) => {
           if (note) {
             pendingOperations++;
-            const addRequest = store.add({ date, note });
-            
-            addRequest.onsuccess = () => {
-              completedOperations++;
-              if (completedOperations === pendingOperations && !hasError) {
-                // All operations completed
-              }
-            };
-            
-            addRequest.onerror = () => {
+            const putRequest = store.put({ date, note });
+            putRequest.onsuccess = checkCompletion;
+            putRequest.onerror = () => {
               if (!hasError) {
                 hasError = true;
-
-                reject(new Error(`Failed to add date note for ${date}: ${addRequest.error}`));
+                reject(new Error(`Failed to add date note for ${date}: ${putRequest.error}`));
               }
             };
           }
         });
-
+        
+        // If no operations needed, transaction will complete normally
         if (pendingOperations === 0) {
-          // No date notes to save
+          // No changes needed
         }
       };
 
-      clearRequest.onerror = () => {
-
-        reject(new Error(`Failed to clear date notes: ${clearRequest.error}`));
+      getAllRequest.onerror = () => {
+        reject(new Error(`Failed to get existing date notes keys: ${getAllRequest.error}`));
       };
     });
   }
