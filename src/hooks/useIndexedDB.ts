@@ -194,8 +194,8 @@ export function useScheduleData() {
       await workScheduleDB.setSchedule(scheduleToStore);
 
       
-      // Add delay for iPhone persistence
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Add longer delay for Android persistence reliability
+      await new Promise(resolve => setTimeout(resolve, 200));
       
     } catch (err) {
 
