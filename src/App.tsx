@@ -260,22 +260,23 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   // Initialize content animation when component mounts
   useEffect(() => {
     if (contentRef.current && showMainApp) {
-      gsap.fromTo(contentRef.current,
-        {
-          opacity: 0,
-          y: 30,
-          scale: 0.95,
-          force3D: true
-        },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.8,
-          ease: "power2.out",
-          force3D: true
-        }
-      );
+      // Immediately set initial state before animation to prevent flash
+      gsap.set(contentRef.current, {
+        opacity: 0,
+        y: 30,
+        scale: 0.95,
+        force3D: true
+      });
+      
+      // Then animate to final state
+      gsap.to(contentRef.current, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.8,
+        ease: "power2.out",
+        force3D: true
+      });
     }
   }, [showMainApp]);
 
@@ -698,7 +699,13 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
 
   // Main app content
   return (
-    <div ref={contentRef} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div ref={contentRef} style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      // Start hidden to prevent flash before GSAP sets initial state
+      opacity: 0
+    }}>
       {/* Tab Navigation */}
       <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
       
