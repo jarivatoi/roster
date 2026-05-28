@@ -32,6 +32,15 @@ const AdminPanel: React.FC = () => {
   const [staffToDelete, setStaffToDelete] = useState<{id: string, name: string} | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Filter staff based on search query
+  const filteredStaff = staff.filter(s => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const name = `${s.name} ${s.surname}`.toLowerCase();
+    const idNumber = s.id_number?.toLowerCase() || '';
+    return name.includes(query) || idNumber.includes(query);
+  });
+
   const fetchData = async () => {
     setLoading(true)
     try {
@@ -230,7 +239,7 @@ const AdminPanel: React.FC = () => {
           textAlign: 'center',
           display: 'block',
           width: '100%'
-        }}>Staff Directory</strong>
+        }}>Staff Directory ({filteredStaff.length})</strong>
         
         {/* Search Filter */}
         <div style={{ marginBottom: 8 }}>
@@ -282,15 +291,7 @@ const AdminPanel: React.FC = () => {
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y'
           }}>
-            {staff
-              .filter(s => {
-                if (!searchQuery.trim()) return true;
-                const query = searchQuery.toLowerCase();
-                const name = `${s.name} ${s.surname}`.toLowerCase();
-                const idNumber = s.id_number?.toLowerCase() || '';
-                return name.includes(query) || idNumber.includes(query);
-              })
-              .map(s => (
+            {filteredStaff.map(s => (
               <li key={s.id} style={{ 
                 display: 'flex', 
                 flexDirection: 'column', 
@@ -370,13 +371,7 @@ const AdminPanel: React.FC = () => {
                 </div>
               </li>
             ))}
-          {staff.filter(s => {
-            if (!searchQuery.trim()) return true;
-            const query = searchQuery.toLowerCase();
-            const name = `${s.name} ${s.surname}`.toLowerCase();
-            const idNumber = s.id_number?.toLowerCase() || '';
-            return name.includes(query) || idNumber.includes(query);
-          }).length === 0 && searchQuery.trim() && (
+          {filteredStaff.length === 0 && searchQuery.trim() && (
             <li style={{
               padding: '24px 16px',
               textAlign: 'center',
