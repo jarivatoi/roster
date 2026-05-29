@@ -350,7 +350,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 z-[9999]"
       onClick={handleBackdropClick}
       style={{
         position: 'fixed',
@@ -362,17 +362,17 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         WebkitOverflowScrolling: 'touch',
         touchAction: 'pan-y',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        paddingTop: 'env(safe-area-inset-top, 8px)'
       }}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 my-8 select-none"
+        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 my-2 select-none"
         style={{ 
           userSelect: 'none', 
           WebkitUserSelect: 'none',
-          height: '100vh',
-          maxHeight: '100vh',
+          maxHeight: 'calc(100dvh - 16px)',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
@@ -380,26 +380,26 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative p-6 pb-4 border-b border-gray-200 flex-shrink-0">
+        <div className="relative px-4 py-3 border-b border-gray-200 flex-shrink-0">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors duration-200 z-10"
+            className="absolute top-2 right-2 p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors duration-200 z-10"
           >
             <X className="w-5 h-5" />
           </button>
           
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-              {editingShift ? <Edit className="w-6 h-6 text-indigo-600" /> : <Plus className="w-6 h-6 text-indigo-600" />}
+          <div className="flex items-center justify-center space-x-3 mb-2">
+            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+              {editingShift ? <Edit className="w-5 h-5 text-indigo-600" /> : <Plus className="w-5 h-5 text-indigo-600" />}
             </div>
           </div>
 
-          <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">
+          <h3 className="text-lg font-bold text-gray-900 text-center">
             {editingShift ? 'Edit Shift' : 'Add New Shift'}
           </h3>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain', minHeight: 0 }}>
+        <div className="px-4 py-3 overflow-y-auto flex-1" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain', minHeight: 0 }}>
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start justify-between">
@@ -423,9 +423,9 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">From</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 min-w-0">
+                <label className="block text-sm font-medium text-gray-700 mb-1 text-center">From</label>
                 <input
                   type="time"
                   value={formData.fromTime}
@@ -433,11 +433,12 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
                     setFormData(prev => ({ ...prev, fromTime: e.target.value }));
                     if (error && error.includes('Hours Validation')) setError(null);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center"
+                  className="w-full px-1 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center text-base"
+                  style={{ minWidth: 0 }}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">To</label>
+              <div className="flex-1 min-w-0">
+                <label className="block text-sm font-medium text-gray-700 mb-1 text-center">To</label>
                 <input
                   type="time"
                   value={formData.toTime}
@@ -445,12 +446,13 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
                     setFormData(prev => ({ ...prev, toTime: e.target.value }));
                     if (error && error.includes('Hours Validation')) setError(null);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center"
+                  className="w-full px-1 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center text-base"
+                  style={{ minWidth: 0 }}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Normal Hours</label>
                 <input
@@ -486,7 +488,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Normal Allowance</label>
                 <input
