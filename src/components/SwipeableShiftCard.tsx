@@ -548,7 +548,9 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
    * - Prevents accidental repeated actions
    * - Returns card to neutral state for next interaction
    */
-  const handleActionClick = (action: () => void) => {
+  const handleActionClick = (e: React.SyntheticEvent, action: () => void) => {
+    e.stopPropagation();
+    e.preventDefault();
     action();
     closeActions();
   };
@@ -607,7 +609,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
       */}
       <div 
         className="absolute right-0 top-0 bottom-0 flex"
-        style={{ width: `${MAX_SWIPE}px` }}
+        style={{ width: `${MAX_SWIPE}px`, zIndex: 10 }}
       >
         {/* 
           EDIT BUTTON
@@ -616,11 +618,14 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
           Minimum 44px touch target meets accessibility guidelines.
         */}
         <button
-          onClick={() => handleActionClick(onEdit)}
+          onClick={(e) => handleActionClick(e, onEdit)}
+          onTouchEnd={(e) => handleActionClick(e, onEdit)}
           className="flex-1 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white flex items-center justify-center transition-colors duration-200"
           style={{
             minWidth: '60px',
-            minHeight: '44px' // iOS/Android accessibility standard
+            minHeight: '44px',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent'
           }}
         >
           <Edit className="w-5 h-5" />
@@ -633,11 +638,14 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
           Same sizing as edit button for visual balance.
         */}
         <button
-          onClick={() => handleActionClick(onDelete)}
+          onClick={(e) => handleActionClick(e, onDelete)}
+          onTouchEnd={(e) => handleActionClick(e, onDelete)}
           className="flex-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center transition-colors duration-200"
           style={{
             minWidth: '60px',
-            minHeight: '44px' // iOS/Android accessibility standard
+            minHeight: '44px',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent'
           }}
         >
           <Trash2 className="w-5 h-5" />
