@@ -609,7 +609,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
       */}
       <div 
         className="absolute right-0 top-0 bottom-0 flex"
-        style={{ width: `${MAX_SWIPE}px` }}
+        style={{ width: `${MAX_SWIPE}px`, zIndex: isOpen ? 2 : 0 }}
       >
         {/* 
           EDIT BUTTON
@@ -677,6 +677,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
           WebkitUserSelect: 'none',
           // Allow vertical scrolling but handle horizontal gestures
           touchAction: 'pan-y',
+          pointerEvents: 'auto',
         }}
         // Touch events for mobile swipe gestures
         onTouchStart={handleTouchStart}
