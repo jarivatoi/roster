@@ -609,7 +609,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
       */}
       <div 
         className="absolute right-0 top-0 bottom-0 flex"
-        style={{ width: `${MAX_SWIPE}px`, zIndex: 10 }}
+        style={{ width: `${MAX_SWIPE}px` }}
       >
         {/* 
           EDIT BUTTON
@@ -671,6 +671,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
         }`}
         style={{
           transform: `translateX(${translateX}px)`,
+          zIndex: 1,
           // Prevent text selection during swipe
           userSelect: 'none',
           WebkitUserSelect: 'none',
