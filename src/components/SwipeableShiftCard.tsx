@@ -275,10 +275,12 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
    * - startX: Initial touch position when gesture begins
    * - currentX: Current touch position during gesture
    * - lastTranslateX: Last committed position before new gesture
+   * - actionTriggered: Guard to prevent double-firing on iOS
    */
   const startX = useRef(0);
   const currentX = useRef(0);
   const lastTranslateX = useRef(0);
+  const actionTriggered = useRef(false);
   
   // ==========================================================================
   // CONFIGURATION CONSTANTS
@@ -379,6 +381,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
    */
   const closeActions = () => {
     setIsOpen(false);
+    actionTriggered.current = false;
     animateToPosition(0);
   };
   
@@ -392,6 +395,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
    */
   const openActions = () => {
     setIsOpen(true);
+    actionTriggered.current = false;
     animateToPosition(-MAX_SWIPE);
   };
   
@@ -551,8 +555,14 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
   const handleActionClick = (e: React.SyntheticEvent, action: () => void) => {
     e.stopPropagation();
     e.preventDefault();
-    action();
+    // Guard against double-fire on iOS
+    if (actionTriggered.current) return;
+    actionTriggered.current = true;
+    // Close card first, then trigger action after animation
     closeActions();
+    setTimeout(() => {
+      action();
+    }, 100);
   };
   
   // ==========================================================================
@@ -609,7 +619,7 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
       */}
       <div 
         className="absolute right-0 top-0 bottom-0 flex"
-        style={{ width: `${MAX_SWIPE}px`, zIndex: isOpen ? 2 : 0 }}
+        style={{ width: `${MAX_SWIPE}px`, zIndex: isOpen ? 2 : 0, pointerEvents: isOpen ? 'auto' : 'none' }}
       >
         {/* 
           EDIT BUTTON
