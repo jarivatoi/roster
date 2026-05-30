@@ -44,6 +44,7 @@ import { CURRENCY_OPTIONS } from '../constants';
 import { AddShiftModal } from './AddShiftModal';
 import { ToastNotification } from './ToastNotification';
 import { SwipeableShiftCard } from './SwipeableShiftCard';
+import ConfirmationModal from './ConfirmationModal';
 
 interface SettingsPanelProps {
   settings: Settings;
@@ -79,6 +80,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
    */
   const [isAddShiftModalOpen, setIsAddShiftModalOpen] = useState(false);
   const [editingShift, setEditingShift] = useState<CustomShift | null>(null);
+  const [shiftToDelete, setShiftToDelete] = useState<CustomShift | null>(null);
   
   /**
    * FORMULA CALCULATION STATE
@@ -498,8 +500,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
    * Processes shift deletion and shows success notification
    */
   const handleDeleteShift = (shiftId: string) => {
-    onDeleteCustomShift(shiftId);
-    setToast({ message: 'Custom shift deleted successfully!', type: 'success' });
+    const shift = settings.customShifts?.find(s => s.id === shiftId) || null;
+    setShiftToDelete(shift);
+  };
+
+  const confirmDeleteShift = () => {
+    if (shiftToDelete) {
+      onDeleteCustomShift(shiftToDelete.id);
+      setShiftToDelete(null);
+      setToast({ message: 'Custom shift deleted successfully!', type: 'success' });
+    }
   };
 
   // ============================================================================
@@ -785,6 +795,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Delete Shift Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!shiftToDelete}
+        title="Delete Shift"
+        message={shiftToDelete ? `Are you sure you want to delete "${shiftToDelete.label}"? This action cannot be undone.` : ''}
+        onConfirm={confirmDeleteShift}
+        onCancel={() => setShiftToDelete(null)}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDanger={true}
+      />
     </div>
   );
 };
