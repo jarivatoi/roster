@@ -350,7 +350,6 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]"
       onClick={handleBackdropClick}
       style={{
         position: 'fixed',
@@ -358,25 +357,36 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 9999,
-        WebkitOverflowScrolling: 'touch',
-        touchAction: 'pan-y',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        padding: '1rem',
+        boxSizing: 'border-box',
+        WebkitOverflowScrolling: 'touch',
+        overflowY: 'auto'
       }}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 select-none"
+        onClick={(e) => e.stopPropagation()}
         style={{ 
-          userSelect: 'none', 
-          WebkitUserSelect: 'none',
-          maxHeight: 'calc(100vh - 2rem)', // Account for vertical padding
+          backgroundColor: 'white',
+          borderRadius: '1rem',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          maxWidth: '28rem',
+          width: '100%',
+          maxHeight: 'calc(100vh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))', // iOS safe area
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden' // Prevent content from breaking out
+          overflow: 'hidden',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          marginLeft: 'auto',
+          marginRight: 'auto'
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="relative p-6 pb-4 border-b border-gray-200 flex-shrink-0">
           <button
