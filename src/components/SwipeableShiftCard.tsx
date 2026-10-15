@@ -622,7 +622,11 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
       */}
       <div 
         className="absolute right-0 top-0 bottom-0 flex"
-        style={{ width: `${MAX_SWIPE}px` }}
+        style={{ 
+          width: `${MAX_SWIPE}px`,
+          touchAction: 'manipulation', // Allow native tap on iOS
+          WebkitOverflowScrolling: 'touch'
+        }}
       >
         {/* 
           EDIT BUTTON
@@ -633,13 +637,20 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            handleActionClick(onEdit);
+            // Use setTimeout to ensure modal opens after current event loop
+            setTimeout(() => {
+              handleActionClick(onEdit);
+            }, 0);
           }}
-          className="flex-1 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white flex items-center justify-center transition-colors duration-200"
+          onTouchStart={(e) => e.stopPropagation()}
           style={{
             minWidth: '60px',
-            minHeight: '44px' // iOS/Android accessibility standard
+            minHeight: '44px',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
+            cursor: 'pointer'
           }}
+          className="flex-1 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white flex items-center justify-center transition-colors duration-200"
         >
           <Edit className="w-5 h-5" />
         </button>
@@ -653,13 +664,20 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            handleActionClick(onDelete);
+            // Use setTimeout to ensure action completes after current event loop
+            setTimeout(() => {
+              handleActionClick(onDelete);
+            }, 0);
           }}
-          className="flex-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center transition-colors duration-200"
+          onTouchStart={(e) => e.stopPropagation()}
           style={{
             minWidth: '60px',
-            minHeight: '44px' // iOS/Android accessibility standard
+            minHeight: '44px',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
+            cursor: 'pointer'
           }}
+          className="flex-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center transition-colors duration-200"
         >
           <Trash2 className="w-5 h-5" />
         </button>
