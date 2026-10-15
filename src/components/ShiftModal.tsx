@@ -250,7 +250,16 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       return false;
     }
     
-    // Time-based overlaps are now allowed - only prevent duplicate labels
+    // Check for time overlaps with already selected shifts
+    const newShift = availableShifts.find(s => s.id === shiftId);
+    if (newShift) {
+      for (const selectedShiftId of currentShifts) {
+        const selectedShift = availableShifts.find(s => s.id === selectedShiftId);
+        if (selectedShift && checkTimeOverlap(newShift, selectedShift)) {
+          return false; // Overlaps with an already selected shift
+        }
+      }
+    }
     
     return true;
   };
@@ -538,7 +547,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                       )}
                       {showOverlap && (
                         <div className="text-xs mt-1 text-red-500 select-none">
-                          Cannot combine with current shifts
+                          Cannot be added in shift combination
                         </div>
                       )}
                       {isSelected && isExcluded && (

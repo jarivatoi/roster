@@ -211,62 +211,6 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     return null;
   };
 
-  const checkForTimeOverlap = (fromTime: string, toTime: string): string | null => {
-    if (!settings?.customShifts) return null;
-    
-    const parseTime = (time: string): number => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
-    
-    const newFrom = parseTime(fromTime);
-    const newTo = parseTime(toTime);
-    
-    // Check if new shift crosses midnight (overnight shift)
-    const isNewOvernight = newTo <= newFrom;
-    
-    const overlappingShift = settings.customShifts.find((shift: CustomShift) => {
-      if (editingShift && shift.id === editingShift.id) return false; // Skip current shift when editing
-      
-      const existingFrom = parseTime(shift.fromTime);
-      const existingTo = parseTime(shift.toTime);
-      const isExistingOvernight = existingTo <= existingFrom;
-      
-      // Case 1: Both are normal shifts (no midnight crossing)
-      if (!isNewOvernight && !isExistingOvernight) {
-        return newFrom < existingTo && existingFrom < newTo;
-      }
-      
-      // Case 2: New shift is overnight, existing is normal
-      if (isNewOvernight && !isExistingOvernight) {
-        // New shift covers: newFrom->midnight and midnight->newTo
-        // Overlaps if existing intersects with either segment
-        // Segment 1: [newFrom, 1440), Segment 2: [0, newTo]
-        return (existingFrom < 1440 && newFrom < existingTo) || (existingFrom < newTo);
-      }
-      
-      // Case 3: Existing is overnight, new is normal
-      if (!isNewOvernight && isExistingOvernight) {
-        // Existing covers: existingFrom->midnight and midnight->existingTo
-        // Overlaps if new intersects with either segment
-        // Segment 1: [existingFrom, 1440), Segment 2: [0, existingTo]
-        return (newFrom < 1440 && existingFrom < newTo) || (newFrom < existingTo);
-      }
-      
-      // Case 4: Both are overnight (both cross midnight)
-      // They overlap if they share any common time period
-      // Since both cross midnight, check if one starts after the other ends (in the evening part)
-      // or if one ends after the other starts (in the morning part)
-      return !(newFrom >= existingTo && existingFrom >= newTo); // Not (completely separate)
-    });
-    
-    if (overlappingShift) {
-      return `Time overlap with "${overlappingShift.label}" (${overlappingShift.fromTime} - ${overlappingShift.toTime})`;
-    }
-    
-    return null;
-  };
-
   const formatShiftDisplay = (fromTime: string, toTime: string): string => {
     return `${fromTime} to ${toTime}`;
   };
@@ -297,13 +241,6 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     const duplicateCheck = checkForDuplicateLabel(formData.label.trim());
     if (duplicateCheck) {
       setAlertMessage(`Duplicate Label Error: ${duplicateCheck}`);
-      setShowAlert(true);
-      return;
-    }
-
-    const overlapCheck = checkForTimeOverlap(formData.fromTime, formData.toTime);
-    if (overlapCheck) {
-      setAlertMessage(`Overlap Error: ${overlapCheck}`);
       setShowAlert(true);
       return;
     }
