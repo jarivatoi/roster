@@ -150,6 +150,26 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     if (isOpen) {
       // Lock body scroll
       document.body.style.overflow = 'hidden';
+      
+      // Debug: Log modal position after render
+      setTimeout(() => {
+        const modalElement = document.querySelector('[data-modal-panel]');
+        if (modalElement) {
+          const rect = modalElement.getBoundingClientRect();
+          console.log('=== MODAL DEBUG ===');
+          console.log('Viewport:', window.innerWidth, 'x', window.innerHeight);
+          console.log('Modal rect:', {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+            bottom: rect.bottom,
+            right: rect.right
+          });
+          console.log('Is visible?', rect.top >= 0 && rect.bottom <= window.innerHeight);
+          console.log('===================');
+        }
+      }, 100);
     }
 
     return () => {
@@ -354,12 +374,13 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'center',
         padding: '1rem'
       }}
     >
       <div 
+        data-modal-panel
         onClick={(e) => e.stopPropagation()}
         style={{ 
           backgroundColor: 'white',
@@ -367,8 +388,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           maxWidth: '28rem',
           width: '100%',
-          marginTop: '10vh',
-          marginBottom: '2rem',
+          maxHeight: 'calc(100vh - 2rem)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
