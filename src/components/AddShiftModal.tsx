@@ -233,7 +233,8 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
   const handleSave = () => {
     const validation = validateShiftTimes(formData.fromTime, formData.toTime);
     if (validation) {
-      setError(`Validation Error: ${validation}`);
+      setAlertMessage(`Validation Error: ${validation}`);
+      setShowAlert(true);
       return;
     }
 
@@ -245,7 +246,8 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     }
 
     if (!formData.label.trim()) {
-      setError('Validation Error: Shift label is required');
+      setAlertMessage('Validation Error: Shift label is required');
+      setShowAlert(true);
       return;
     }
 
@@ -254,21 +256,24 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
       .some(([, value]) => value === true);
     
     if (!hasSelectedDay) {
-      setError('Validation Error: Please select at least one day for this shift');
+      setAlertMessage('Validation Error: Please select at least one day for this shift');
+      setShowAlert(true);
       return;
     }
     
     if (formData.fromTime && formData.toTime) {
       const hoursValidation = validateHours(formData.normalHours + formData.overtimeHours, 0, formData.fromTime, formData.toTime);
       if (hoursValidation) {
-        setError(`Hours Validation Error: ${hoursValidation}`);
+        setAlertMessage(`Hours Validation Error: ${hoursValidation}`);
+        setShowAlert(true);
         return;
       }
     }
     
     // Validate manual amount if enabled
     if (formData.useManualAmount && (!formData.manualAmount || formData.manualAmount <= 0)) {
-      setError('Manual Amount Error: Manual amount must be greater than 0');
+      setAlertMessage('Manual Amount Error: Manual amount must be greater than 0');
+      setShowAlert(true);
       return;
     }
     
