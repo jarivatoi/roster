@@ -90,6 +90,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   const [dateNotes, setDateNotes] = useIndexedDB<Record<string, string>>('dateNotes', {});
   const [scheduleTitle, setScheduleTitle] = useIndexedDB<string>('scheduleTitle', 'Work Schedule', 'metadata');
   const [monthlySalaries, setMonthlySalaries] = useIndexedDB<Record<string, number>>('monthlySalaries', {}, 'metadata');
+  const [excludedShifts, setExcludedShifts] = useIndexedDB<Record<string, boolean>>('excludedShifts', {});
   const [settings, setSettings] = useIndexedDB<Settings & { useManualMode?: boolean }>('workSettings', {
     basicSalary: 35000,
     hourlyRate: 201.92,
@@ -153,7 +154,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   const currentMonthlySalary = monthlySalaries[monthKey] || 0;
   
   // Pass specialDates to the calculation hook with refreshKey dependency and monthly salary
-  const { totalAmount, monthToDateAmount } = useScheduleCalculations(schedule, settings, specialDates, currentDate, refreshKey, currentMonthlySalary);
+  const { totalAmount, monthToDateAmount } = useScheduleCalculations(schedule, settings, specialDates, currentDate, refreshKey, currentMonthlySalary, excludedShifts);
 
   // Check if data is loading
   // Remove database dependency for initial load
@@ -721,6 +722,15 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
           specialDates={specialDates}
           dateNotes={dateNotes}
           settings={settings}
+          excludedShifts={excludedShifts}
+          onToggleExcluded={(dateKey: string, shiftId: string) => {
+            const shiftKey = `${dateKey}|${shiftId}`;
+            setExcludedShifts(prev => ({
+              ...prev,
+              [shiftKey]: !prev[shiftKey]
+            }));
+            setRefreshKey(prev => prev + 1);
+          }}
           onClose={() => setShowModal(false)}
           onToggleShift={toggleShift}
           onUpdateNote={handleUpdateNote}

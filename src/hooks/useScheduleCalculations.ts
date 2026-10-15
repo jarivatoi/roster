@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DaySchedule, Settings, SpecialDates } from '../types';
+import { DaySchedule, Settings, SpecialDates, ExcludedShifts } from '../types';
 
 export const useScheduleCalculations = (
   schedule: DaySchedule,
@@ -7,7 +7,8 @@ export const useScheduleCalculations = (
   specialDates: SpecialDates,
   currentDate?: Date,
   refreshKey?: number, // Add refresh key parameter
-  monthlySalary?: number // Add monthly salary parameter
+  monthlySalary?: number, // Add monthly salary parameter
+  excludedShifts?: ExcludedShifts // Add excluded shifts parameter
 ) => {
   const { totalAmount, monthToDateAmount } = useMemo(() => {
     // Determine effective salary: use monthlySalary if set (> 0),
@@ -68,6 +69,12 @@ export const useScheduleCalculations = (
       
       // Calculate each shift individually for proper amount calculation
       dayShifts.forEach(shiftId => {
+        // Skip excluded shifts (marked as black/not counted)
+        const shiftKey = `${dateKey}|${shiftId}`;
+        if (excludedShifts && excludedShifts[shiftKey]) {
+          return; // Skip this shift entirely
+        }
+        
         let shiftAmount = 0;
         
         // First check custom shifts

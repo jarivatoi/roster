@@ -10,6 +10,10 @@ export interface DaySchedule {
   [key: string]: string[]; // date string -> array of shift IDs
 }
 
+export interface ExcludedShifts {
+  [key: string]: boolean; // "date|shiftId" -> is excluded
+}
+
 export interface SpecialDates {
   [key: string]: boolean; // date string -> is special date
 }

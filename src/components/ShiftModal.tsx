@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Check } from 'lucide-react';
 import { SHIFTS } from '../constants';
-import { DaySchedule, SpecialDates, DateNotes, Settings, CustomShift } from '../types';
+import { DaySchedule, SpecialDates, DateNotes, Settings, CustomShift, ExcludedShifts } from '../types';
 import { ScrollingText } from './ScrollingText';
+import { SwipeableShiftButton } from './SwipeableShiftButton';
 
 interface ShiftModalProps {
   selectedDate: string | null;
@@ -10,8 +11,10 @@ interface ShiftModalProps {
   specialDates: SpecialDates;
   dateNotes: DateNotes;
   settings?: Settings;
+  excludedShifts?: ExcludedShifts;
   onToggleShift: (shiftId: string) => void;
   onToggleSpecialDate: (dateKey: string, isSpecial: boolean) => void;
+  onToggleExcluded: (dateKey: string, shiftId: string) => void;
   onUpdateNote: (dateKey: string, note: string) => void;
   onClose: () => void;
 }
@@ -22,8 +25,10 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   specialDates,
   dateNotes,
   settings,
+  excludedShifts,
   onToggleShift,
   onToggleSpecialDate,
+  onToggleExcluded,
   onUpdateNote,
   onClose
 }) => {
@@ -495,15 +500,21 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               const isDisabled = !isSelected && (!canSelect || maxReached);
               const showMaxSelection = maxReached && !canSelect;
               const showOverlap = !canSelect && !maxReached && !isSelected; // Only show if NOT already selected
+              const isExcluded = excludedShifts && excludedShifts[`${selectedDate}|${shift.id}`];
 
               return (
-                <button
+                <SwipeableShiftButton
                   key={shift.id}
+                  isSelected={isSelected}
+                  isExcluded={isExcluded || false}
                   onClick={() => handleShiftToggle(shift.id)}
+                  onToggleExclude={() => selectedDate && onToggleExcluded(selectedDate, shift.id)}
                   disabled={isDisabled}
                   className={`w-full p-4 rounded-lg border-2 text-center transition-all duration-200 select-none ${
                     isSelected
-                      ? `${shift.color} border-current shadow-md transform scale-[1.02]`
+                      ? isExcluded
+                        ? 'bg-gray-800 text-white border-gray-800 shadow-md transform scale-[1.02]'
+                        : `${shift.color} border-current shadow-md transform scale-[1.02]`
                       : isDisabled
                         ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
                         : 'bg-white border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100'
@@ -528,6 +539,11 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                           Cannot combine with current shifts
                         </div>
                       )}
+                      {isSelected && isExcluded && (
+                        <div className="text-xs mt-1 text-yellow-300 font-semibold select-none">
+                          ⚠️ Not counted in calculations
+                        </div>
+                      )}
                     </div>
                     {isSelected && (
                       <div className="w-6 h-6 bg-current rounded-full flex items-center justify-center">
@@ -535,7 +551,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                       </div>
                     )}
                   </div>
-                </button>
+                </SwipeableShiftButton>
               );
             })}
           </div>
