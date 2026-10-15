@@ -79,6 +79,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
    */
   const [isAddShiftModalOpen, setIsAddShiftModalOpen] = useState(false);
   const [editingShift, setEditingShift] = useState<CustomShift | null>(null);
+  const [shiftListKey, setShiftListKey] = useState(0); // Force remount of shift list after modal close
   
   /**
    * FORMULA CALCULATION STATE
@@ -732,7 +733,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </div>
           ) : (
             // Shifts grid display
-            <div className="grid grid-cols-1 gap-4">
+            <div key={shiftListKey} className="grid grid-cols-1 gap-4">
               {settings.customShifts
                 .sort((a, b) => {
                   // Sort by fromTime (start time)
@@ -767,6 +768,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           onClose={() => {
             setIsAddShiftModalOpen(false);
             setEditingShift(null);
+            setShiftListKey(prev => prev + 1); // Force remount to reset gesture state
           }}
           onSave={editingShift ? handleUpdateShift : handleAddShift}
           editingShift={editingShift}
