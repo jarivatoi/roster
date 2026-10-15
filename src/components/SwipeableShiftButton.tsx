@@ -71,7 +71,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   };
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '0.5rem' }}>
       {/* Swipe indicator overlay */}
       {isSelected && (
         <div
@@ -81,7 +81,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
             right: 0,
             bottom: 0,
             width: `${MAX_SWIPE}px`,
-            backgroundColor: isExcluded ? '#10b981' : '#ef4444',
+            backgroundColor: isExcluded ? '#ef4444' : '#10b981',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -93,7 +93,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
               backgroundColor: 'white',
               borderRadius: '20px',
               padding: '6px 14px',
-              color: isExcluded ? '#10b981' : '#ef4444',
+              color: isExcluded ? '#ef4444' : '#10b981',
               fontWeight: 600,
               fontSize: '0.7rem',
               textTransform: 'uppercase',
@@ -102,7 +102,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
               border: 'none'
             }}
           >
-            {isExcluded ? 'Normal' : 'Overtime'}
+            {isExcluded ? 'Overtime' : 'Normal'}
           </div>
         </div>
       )}
