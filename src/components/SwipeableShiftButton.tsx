@@ -72,30 +72,6 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden' }}>
-      {/* Exclude indicator background */}
-      {isSelected && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: `${MAX_SWIPE}px`,
-            backgroundColor: isExcluded ? '#10b981' : '#ef4444',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '0.875rem',
-            transition: 'background-color 0.2s',
-            zIndex: 1
-          }}
-        >
-          {isExcluded ? 'COUNT' : 'EXCLUDE'}
-        </div>
-      )}
-      
       {/* Main button */}
       <button
         onClick={handleClick}
@@ -109,8 +85,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
           transform: `translateX(${translateX}px)`,
           transition: isDragging ? 'none' : 'transform 0.2s',
           position: 'relative',
-          zIndex: 2,
-          backgroundColor: isSelected && isExcluded ? '#1f2937' : undefined // Black when excluded
+          zIndex: 2
         }}
       >
         {children}

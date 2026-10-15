@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Calculator, Edit3, TrendingUp, Trash2, AlertTriangle, X, Download } from 'lucide-react';
 import { gsap } from 'gsap';
 import { SHIFTS } from '../constants';
-import { DaySchedule, SpecialDates, DateNotes, Settings } from '../types';
+import { DaySchedule, SpecialDates, DateNotes, Settings, ExcludedShifts } from '../types';
 import { ClearDateModal } from './ClearDateModal';
 import { ClearMonthModal } from './ClearMonthModal';
 import { MonthClearModal } from './MonthClearModal';
@@ -19,6 +19,7 @@ interface CalendarProps {
   specialDates: SpecialDates;
   dateNotes: DateNotes;
   settings?: Settings;
+  excludedShifts?: ExcludedShifts;
   onDateClick: (day: number) => void;
   onNavigateMonth: (direction: 'prev' | 'next') => void;
   totalAmount: number;
@@ -41,6 +42,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   specialDates,
   dateNotes,
   settings,
+  excludedShifts,
   onDateClick,
   onNavigateMonth,
   totalAmount,
@@ -1180,10 +1182,14 @@ export const Calendar: React.FC<CalendarProps> = ({
                       {/* All shifts displayed */}
                       {dayShifts.map((shiftId, idx) => {
                         const shift = getShiftDisplay(shiftId);
+                        const dateKey = formatDateKey(day);
+                        const isExcluded = excludedShifts && excludedShifts[`${dateKey}|${shiftId}`];
                         return shift ? (
                           <div
                             key={`${shiftId}-${idx}`}
-                            className={`shift-text text-[8px] sm:text-[11px] font-bold leading-tight text-black flex-shrink-0 w-full select-none overflow-hidden ${isPastDate(day) ? 'opacity-60' : ''}`}
+                            className={`shift-text text-[8px] sm:text-[11px] font-bold leading-tight flex-shrink-0 w-full select-none overflow-hidden ${
+                              isExcluded ? 'text-black' : 'text-red-600'
+                            } ${isPastDate(day) ? 'opacity-60' : ''}`}
                           >
                             <ScrollingText 
                               text={shift.time} 

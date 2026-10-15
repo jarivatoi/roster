@@ -513,7 +513,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                   className={`w-full p-4 rounded-lg border-2 text-center transition-all duration-200 select-none ${
                     isSelected
                       ? isExcluded
-                        ? 'bg-gray-800 text-white border-gray-800 shadow-md transform scale-[1.02]'
+                        ? 'bg-white border-gray-400 shadow-md transform scale-[1.02]'
                         : `${shift.color} border-current shadow-md transform scale-[1.02]`
                       : isDisabled
                         ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
@@ -527,7 +527,9 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                 >
                   <div className="flex justify-between items-center">
                     <div className="text-left flex-1">
-                      <div className="font-semibold select-none">{shift.label}</div>
+                      <div className={`font-semibold select-none ${
+                        isSelected && isExcluded ? 'text-black' : ''
+                      }`}>{shift.label}</div>
                       <div className="text-sm opacity-75 select-none">{shift.time}</div>
                       {showMaxSelection && (
                         <div className="text-xs mt-1 text-orange-600 font-semibold select-none">
@@ -540,13 +542,15 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                         </div>
                       )}
                       {isSelected && isExcluded && (
-                        <div className="text-xs mt-1 text-yellow-300 font-semibold select-none">
-                          ⚠️ Not counted in calculations
+                        <div className="text-xs mt-1 text-gray-600 font-semibold select-none italic">
+                          Not counted in calculations
                         </div>
                       )}
                     </div>
                     {isSelected && (
-                      <div className="w-6 h-6 bg-current rounded-full flex items-center justify-center">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        isExcluded ? 'bg-black' : 'bg-current'
+                      }`}>
                         <div className="w-2 h-2 bg-white rounded-full"></div>
                       </div>
                     )}

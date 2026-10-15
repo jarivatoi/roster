@@ -364,6 +364,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
             specialDates={specialDates}
             dateNotes={dateNotes}
             settings={settings}
+            excludedShifts={excludedShifts}
             onDateClick={handleDateClick}
             onNavigateMonth={navigateMonth}
             totalAmount={totalAmount}
@@ -500,6 +501,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
             schedule={schedule}
             specialDates={specialDates}
             dateNotes={dateNotes}
+            excludedShifts={excludedShifts}
             onDateClick={handleDateClick}
             onNavigateMonth={navigateMonth}
             totalAmount={totalAmount}
