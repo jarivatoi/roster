@@ -371,12 +371,11 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         style={{ 
           userSelect: 'none', 
           WebkitUserSelect: 'none',
-          height: '100vh',
-          maxHeight: '100vh',
+          maxHeight: 'calc(100vh - 4rem)', // Account for margins
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
-          margin: '0 auto'
+          margin: 'auto' // Center vertically and horizontally
         }}
         onClick={(e) => e.stopPropagation()}
       >
