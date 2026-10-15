@@ -211,6 +211,34 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     return null;
   };
 
+  const checkForTimeOverlap = (fromTime: string, toTime: string): string | null => {
+    if (!settings?.customShifts) return null;
+    
+    const parseTime = (time: string): number => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    const newFrom = parseTime(fromTime);
+    const newTo = parseTime(toTime);
+    
+    const overlappingShift = settings.customShifts.find((shift: CustomShift) => {
+      if (editingShift && shift.id === editingShift.id) return false; // Skip current shift when editing
+      
+      const existingFrom = parseTime(shift.fromTime);
+      const existingTo = parseTime(shift.toTime);
+      
+      // Two ranges overlap if: start1 < end2 AND start2 < end1
+      return newFrom < existingTo && existingFrom < newTo;
+    });
+    
+    if (overlappingShift) {
+      return `Time overlap with "${overlappingShift.label}" (${overlappingShift.fromTime} - ${overlappingShift.toTime})`;
+    }
+    
+    return null;
+  };
+
   const formatShiftDisplay = (fromTime: string, toTime: string): string => {
     return `${fromTime} to ${toTime}`;
   };
@@ -241,6 +269,13 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     const duplicateCheck = checkForDuplicateLabel(formData.label.trim());
     if (duplicateCheck) {
       setAlertMessage(`Duplicate Label Error: ${duplicateCheck}`);
+      setShowAlert(true);
+      return;
+    }
+
+    const overlapCheck = checkForTimeOverlap(formData.fromTime, formData.toTime);
+    if (overlapCheck) {
+      setAlertMessage(`Overlap Error: ${overlapCheck}`);
       setShowAlert(true);
       return;
     }
