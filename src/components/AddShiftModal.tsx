@@ -357,35 +357,32 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        width: '100%',
-        height: '100%',
+        width: '100vw',
+        height: '100vh',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        boxSizing: 'border-box',
-        WebkitOverflowScrolling: 'touch',
-        overflowY: 'auto'
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
       }}
     >
       <div 
         onClick={(e) => e.stopPropagation()}
         style={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           backgroundColor: 'white',
           borderRadius: '1rem',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           maxWidth: '28rem',
-          width: '100%',
-          maxHeight: 'calc(100vh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))', // iOS safe area
+          width: 'calc(100% - 2rem)',
+          maxHeight: 'calc(100vh - 4rem)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           userSelect: 'none',
-          WebkitUserSelect: 'none',
-          marginLeft: 'auto',
-          marginRight: 'auto'
+          WebkitUserSelect: 'none'
         }}
       >
         <div className="relative p-6 pb-4 border-b border-gray-200 flex-shrink-0">
