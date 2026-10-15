@@ -367,15 +367,14 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
       }}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 my-8 select-none"
+        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 select-none"
         style={{ 
           userSelect: 'none', 
           WebkitUserSelect: 'none',
-          maxHeight: 'calc(100vh - 4rem)', // Account for margins
+          maxHeight: 'calc(100vh - 2rem)', // Account for vertical padding
           display: 'flex',
           flexDirection: 'column',
-          position: 'relative',
-          margin: 'auto' // Center vertically and horizontally
+          overflow: 'hidden' // Prevent content from breaking out
         }}
         onClick={(e) => e.stopPropagation()}
       >
