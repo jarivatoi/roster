@@ -251,12 +251,25 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     }
     
     // Check for time overlaps with already selected shifts
-    const newShift = availableShifts.find(s => s.id === shiftId);
-    if (newShift) {
+    // Look up shifts from settings or built-in SHIFTS to get fromTime/toTime
+    const getShiftById = (id: string) => {
+      // Check custom shifts first
+      if (settings?.customShifts) {
+        const customShift = settings.customShifts.find(s => s.id === id);
+        if (customShift) return customShift;
+      }
+      // Then check built-in shifts
+      return SHIFTS.find(s => s.id === id);
+    };
+    
+    const newShift = getShiftById(shiftId);
+    if (newShift && 'fromTime' in newShift && 'toTime' in newShift) {
       for (const selectedShiftId of currentShifts) {
-        const selectedShift = availableShifts.find(s => s.id === selectedShiftId);
-        if (selectedShift && checkTimeOverlap(newShift, selectedShift)) {
-          return false; // Overlaps with an already selected shift
+        const selectedShift = getShiftById(selectedShiftId);
+        if (selectedShift && 'fromTime' in selectedShift && 'toTime' in selectedShift) {
+          if (checkTimeOverlap(newShift, selectedShift)) {
+            return false; // Overlaps with an already selected shift
+          }
         }
       }
     }
