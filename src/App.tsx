@@ -300,6 +300,36 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
     setShowModal(true);
   };
 
+  const checkTimeOverlap = (shift1Id: string, shift2Id: string): boolean => {
+    // Get shift details from settings or built-in shifts
+    const allShifts = [
+      ...(settings?.customShifts || []),
+      // Add built-in shifts from constants if needed
+    ];
+    
+    const shift1 = allShifts.find(s => s.id === shift1Id);
+    const shift2 = allShifts.find(s => s.id === shift2Id);
+    
+    if (!shift1 || !shift2) return false;
+    
+    const [start1Hour, start1Min] = shift1.fromTime.split(':').map(Number);
+    const [end1Hour, end1Min] = shift1.toTime.split(':').map(Number);
+    const [start2Hour, start2Min] = shift2.fromTime.split(':').map(Number);
+    const [end2Hour, end2Min] = shift2.toTime.split(':').map(Number);
+    
+    let start1 = start1Hour * 60 + start1Min;
+    let end1 = end1Hour * 60 + end1Min;
+    let start2 = start2Hour * 60 + start2Min;
+    let end2 = end2Hour * 60 + end2Min;
+    
+    // Handle overnight shifts
+    if (end1 <= start1) end1 += 24 * 60;
+    if (end2 <= start2) end2 += 24 * 60;
+    
+    // Check overlap
+    return start1 < end2 && start2 < end1;
+  };
+
   const canSelectShift = (shiftId: string, dateKey: string) => {
     const currentShifts = schedule[dateKey] || [];
     
@@ -308,7 +338,12 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
       return false;
     }
     
-    // Time-based overlaps are now allowed - only prevent duplicate labels
+    // Check for time overlaps with already selected shifts
+    for (const selectedShiftId of currentShifts) {
+      if (checkTimeOverlap(shiftId, selectedShiftId)) {
+        return false; // Overlaps with an already selected shift
+      }
+    }
     
     return true;
   };
