@@ -146,6 +146,9 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     }
   }, [formData.applicableDays]);
 
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
   useEffect(() => {
     if (isOpen) {
       // Lock body scroll
@@ -236,7 +239,8 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
 
     const duplicateCheck = checkForDuplicateLabel(formData.label.trim());
     if (duplicateCheck) {
-      setError(`Duplicate Label Error: ${duplicateCheck}`);
+      setAlertMessage(`Duplicate Label Error: ${duplicateCheck}`);
+      setShowAlert(true);
       return;
     }
 
@@ -359,6 +363,59 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         padding: '1rem'
       }}
     >
+      {/* Centered Alert Overlay */}
+      {showAlert && (
+        <div
+          onClick={() => setShowAlert(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '1rem',
+              padding: '2rem',
+              maxWidth: '24rem',
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+            <p style={{ fontSize: '1.125rem', fontWeight: '600', color: '#dc2626', marginBottom: '1.5rem' }}>
+              {alertMessage}
+            </p>
+            <button
+              onClick={() => setShowAlert(false)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                borderRadius: '0.5rem',
+                fontWeight: '600',
+                fontSize: '1rem',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
       <div 
         data-modal-panel
         onClick={(e) => e.stopPropagation()}
