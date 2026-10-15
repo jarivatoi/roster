@@ -418,6 +418,10 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!isMobileDevice()) return;
     
+    // Don't start drag if touch originated from action buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    
     const touch = e.touches[0];
     startX.current = touch.clientX;
     currentX.current = touch.clientX;
@@ -447,6 +451,10 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
    */
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !isMobileDevice()) return;
+    
+    // Don't process move if touch originated from action buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
     
     const touch = e.touches[0];
     currentX.current = touch.clientX;
@@ -490,6 +498,13 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
    */
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!isDragging || !isMobileDevice()) return;
+    
+    // Don't process end if touch originated from action buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      setIsDragging(false);
+      return;
+    }
     
     setIsDragging(false);
     
@@ -616,7 +631,10 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
           Minimum 44px touch target meets accessibility guidelines.
         */}
         <button
-          onClick={() => handleActionClick(onEdit)}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleActionClick(onEdit);
+          }}
           className="flex-1 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white flex items-center justify-center transition-colors duration-200"
           style={{
             minWidth: '60px',
@@ -633,7 +651,10 @@ export const SwipeableShiftCard: React.FC<SwipeableShiftCardProps> = ({
           Same sizing as edit button for visual balance.
         */}
         <button
-          onClick={() => handleActionClick(onDelete)}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleActionClick(onDelete);
+          }}
           className="flex-1 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white flex items-center justify-center transition-colors duration-200"
           style={{
             minWidth: '60px',
