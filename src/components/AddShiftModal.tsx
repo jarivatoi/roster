@@ -201,16 +201,16 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     return null;
   };
 
-  const checkForDuplicateTimes = (fromTime: string, toTime: string): string | null => {
+  const checkForDuplicateLabel = (label: string): string | null => {
     if (!settings?.customShifts) return null;
     
-    const duplicateShift = settings.customShifts.find(shift => {
-      if (editingShift && shift.id === editingShift.id) return false;
-      return shift.fromTime === fromTime && shift.toTime === toTime;
+    const duplicateShift = settings.customShifts.find((shift: CustomShift) => {
+      if (editingShift && shift.id === editingShift.id) return false; // Skip current shift when editing
+      return shift.label.toLowerCase() === label.toLowerCase();
     });
     
     if (duplicateShift) {
-      return `A shift with times ${fromTime} to ${toTime} already exists: "${duplicateShift.label}"`;
+      return `A shift with the label "${duplicateShift.label}" already exists`;
     }
     
     return null;
@@ -242,9 +242,9 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
       return;
     }
 
-    const duplicateCheck = checkForDuplicateTimes(formData.fromTime, formData.toTime);
+    const duplicateCheck = checkForDuplicateLabel(formData.label.trim());
     if (duplicateCheck) {
-      setError(`Duplicate Times Error: ${duplicateCheck}`);
+      setError(`Duplicate Label Error: ${duplicateCheck}`);
       return;
     }
 
