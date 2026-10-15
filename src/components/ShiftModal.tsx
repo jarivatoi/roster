@@ -494,7 +494,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               const canSelect = canSelectShift(shift.id, selectedDate);
               const isDisabled = !isSelected && (!canSelect || maxReached);
               const showMaxSelection = maxReached && !canSelect;
-              const showOverlap = !canSelect && !maxReached;
+              const showOverlap = !canSelect && !maxReached && !isSelected; // Only show if NOT already selected
 
               return (
                 <button
