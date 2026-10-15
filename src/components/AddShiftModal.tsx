@@ -372,7 +372,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
           marginBottom: '2rem',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
+          overflow: 'visible',
           userSelect: 'none',
           WebkitUserSelect: 'none'
         }}
@@ -396,7 +396,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
           </h3>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain', minHeight: 0 }}>
+        <div className="p-6 flex-1" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain', minHeight: 0, overflow: 'visible' }}>
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start justify-between">
