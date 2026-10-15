@@ -368,21 +368,22 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
       <div 
         onClick={(e) => e.stopPropagation()}
         style={{ 
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
+          position: 'fixed',
+          top: '50vh',
+          left: '50vw',
           transform: 'translate(-50%, -50%)',
           backgroundColor: 'white',
           borderRadius: '1rem',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           maxWidth: '28rem',
-          width: 'calc(100% - 2rem)',
+          width: 'calc(100vw - 4rem)',
           maxHeight: 'calc(100vh - 4rem)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           userSelect: 'none',
-          WebkitUserSelect: 'none'
+          WebkitUserSelect: 'none',
+          zIndex: 10000
         }}
       >
         <div className="relative p-6 pb-4 border-b border-gray-200 flex-shrink-0">
