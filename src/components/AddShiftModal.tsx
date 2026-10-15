@@ -148,21 +148,13 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      // Lock body scroll
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = '0';
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.bottom = '0';
     }
 
     return () => {
+      // Restore body scroll
       document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.bottom = '';
     };
   }, [isOpen]);
 
