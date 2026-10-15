@@ -72,6 +72,41 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Swipe indicator overlay */}
+      {isSelected && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: `${MAX_SWIPE}px`,
+            backgroundColor: isExcluded ? '#10b981' : '#ef4444',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '20px',
+              padding: '6px 14px',
+              color: isExcluded ? '#10b981' : '#ef4444',
+              fontWeight: 600,
+              fontSize: '0.7rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              border: 'none'
+            }}
+          >
+            {isExcluded ? 'Normal' : 'Overtime'}
+          </div>
+        </div>
+      )}
+      
       {/* Main button */}
       <button
         onClick={handleClick}

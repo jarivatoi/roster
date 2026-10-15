@@ -528,7 +528,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                   <div className="flex justify-between items-center">
                     <div className="text-left flex-1">
                       <div className={`font-semibold select-none ${
-                        isSelected && isExcluded ? 'text-black' : ''
+                        isSelected && isExcluded ? 'text-black' : 'text-red-600'
                       }`}>{shift.label}</div>
                       <div className="text-sm opacity-75 select-none">{shift.time}</div>
                       {showMaxSelection && (
@@ -543,13 +543,13 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                       )}
                       {isSelected && isExcluded && (
                         <div className="text-xs mt-1 text-gray-600 font-semibold select-none italic">
-                          Not counted in calculations
+                          Normal Shift
                         </div>
                       )}
                     </div>
                     {isSelected && (
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        isExcluded ? 'bg-black' : 'bg-current'
+                        isExcluded ? 'bg-black' : 'bg-red-600'
                       }`}>
                         <div className="w-2 h-2 bg-white rounded-full"></div>
                       </div>
