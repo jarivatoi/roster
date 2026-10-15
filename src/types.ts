@@ -1,0 +1,83 @@
+export interface Shift {
+  id: string;
+  label: string;
+  time: string;
+  color: string;
+  displayColor: string;
+}
+
+export interface DaySchedule {
+  [key: string]: string[]; // date string -> array of shift IDs
+}
+
+export interface SpecialDates {
+  [key: string]: boolean; // date string -> is special date
+}
+
+export interface DateNotes {
+  [key: string]: string; // date string -> note text
+}
+
+export interface ShiftCombination {
+  id: string;
+  combination: string;
+  hours: number;
+}
+
+export interface Settings {
+  basicSalary: number;
+  hourlyRate: number;
+  shiftCombinations: ShiftCombination[];
+  currency?: string;
+  customShifts?: CustomShift[];
+  overtimeMultiplier?: number;
+}
+
+export interface MonthlySalaries {
+  [key: string]: number; // monthKey (YYYY-MM) -> salary
+}
+
+export interface ExportData {
+  schedule: DaySchedule;
+  specialDates: SpecialDates;
+  settings: Settings;
+  scheduleTitle: string;
+  exportDate: string;
+  version: string;
+  monthlySalaries?: MonthlySalaries;
+}
+
+export interface AuthCode {
+  code: string;
+  name: string;
+  title?: string;
+  salary?: number;
+  employeeId?: string;
+  firstName?: string;
+  surname?: string;
+}
+
+export interface CustomShift {
+  id: string;
+  label: string;
+  fromTime: string;
+  toTime: string;
+  hours: number;
+  normalHours?: number;
+  overtimeHours?: number;
+  normalAllowanceHours?: number;
+  overtimeAllowanceHours?: number;
+  enabled: boolean;
+  useManualAmount?: boolean;
+  manualAmount?: number;
+  applicableDays?: {
+    monday: boolean;
+    tuesday: boolean;
+    wednesday: boolean;
+    thursday: boolean;
+    friday: boolean;
+    saturday: boolean;
+    sunday: boolean;
+    specialDay: boolean;
+  };
+}
