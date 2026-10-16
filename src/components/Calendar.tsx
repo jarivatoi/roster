@@ -1375,7 +1375,8 @@ export const Calendar: React.FC<CalendarProps> = ({
                               text={shiftMode === 'publicHoliday' ? `${shift.time} (PH)` : shift.time} 
                               pauseDuration={1}
                               scrollDuration={2.5}
-                              className="text-center select-none px-2"
+                              className="text-center select-none"
+                              style={{ paddingRight: '1rem' }}
                             />
                           </div>
                         ) : null;
