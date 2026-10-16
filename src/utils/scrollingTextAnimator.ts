@@ -93,12 +93,9 @@ export class ScrollingTextAnimator {
       return;
     }
     
-    // Calculate scroll distance with padding buffer to ensure full text is visible
-    // The buffer prevents the end of the text from being clipped due to
-    // subpixel rounding or overflow measurement imprecision
-    const overflowWidth = textWidth - containerWidth;
-    const paddingBuffer = Math.max(8, overflowWidth * 0.05);
-    const scrollDistance = overflowWidth + paddingBuffer;
+    // Calculate scroll distance - scroll exactly the overflow width
+    // No extra padding to prevent scrolling past the text
+    const scrollDistance = textWidth - containerWidth;
     
     // Create TweenMax timeline for longer text with spaces
     this.timeline = gsap.timeline({ 

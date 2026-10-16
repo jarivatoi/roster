@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { gsap } from 'gsap';
 import { ScrollingTextAnimator } from '../utils/scrollingTextAnimator';
 
 interface ScrollingTextProps {
@@ -129,7 +130,20 @@ export const ScrollingText: React.FC<ScrollingTextProps> = ({
       setTimeout(checkAndAnimate, 100);
     };
     
+    // Recheck on orientation change (mobile devices)
+    const handleOrientationChange = () => {
+      // Wait for orientation change to complete and layout to update
+      setTimeout(() => {
+        // Reset position before recalculating
+        if (textRef.current) {
+          gsap.set(textRef.current, { x: 0 });
+        }
+        checkAndAnimate();
+      }, 300);
+    };
+    
     window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleOrientationChange);
     
     // Recheck when content changes
     const observer = new MutationObserver(() => {
@@ -146,6 +160,7 @@ export const ScrollingText: React.FC<ScrollingTextProps> = ({
     
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
       observer.disconnect();
       
       // Clean up scroll listener
