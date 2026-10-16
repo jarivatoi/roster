@@ -1434,15 +1434,10 @@ export const Calendar: React.FC<CalendarProps> = ({
               </div>
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
-                  ? `Amount earned from ${formatPeriodDate(periodStart)} to ${formatPeriodDate(today.toISOString().split('T')[0])}`
+                  ? `Amount earned from ${formatPeriodRange(periodStart, today.toISOString().split('T')[0])}`
                   : `Amount earned from start of month to today (${today.getDate()}/${currentMonth + 1}/${currentYear})`
                 }
               </p>
-              {periodStart && periodEnd && (
-                <p className="text-xs text-green-500 mt-1 text-center select-none">
-                  {formatPeriodRange(periodStart, today.toISOString().split('T')[0])}
-                </p>
-              )}
             </div>
           )}
 
@@ -1519,15 +1514,10 @@ export const Calendar: React.FC<CalendarProps> = ({
               </div>
               <p className="text-xs sm:text-sm text-indigo-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
-                  ? `Total amount for period ${formatPeriodDate(periodStart)} to ${formatPeriodDate(periodEnd)}`
+                  ? `Total amount for period ${formatPeriodRange(periodStart, periodEnd)}`
                   : `Total amount for all scheduled shifts in ${monthNames[currentMonth]} ${currentYear}`
                 }
               </p>
-              {periodStart && periodEnd && (
-                <p className="text-xs text-indigo-500 mt-1 text-center select-none">
-                  {formatPeriodRange(periodStart, periodEnd)}
-                </p>
-              )}
             </div>
           </div>
         </div>
