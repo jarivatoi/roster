@@ -95,8 +95,17 @@ export const Calendar: React.FC<CalendarProps> = ({
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
-  // Calculate period dates based on day offsets and current viewed month
+  // Calculate period dates - use stored date strings directly to preserve cross-month selections
   const periodDates = useMemo(() => {
+    // If we have actual date strings stored, use them directly
+    if (periodSelection?.start) {
+      return {
+        start: periodSelection.start,
+        end: periodSelection.end || null
+      };
+    }
+    
+    // Fallback: calculate from day offsets if no date strings (for backward compatibility)
     if (!periodDayOffsets || !periodDayOffsets.startDay) return { start: null, end: null };
     
     try {
@@ -136,7 +145,7 @@ export const Calendar: React.FC<CalendarProps> = ({
       console.error('Error calculating period dates:', error);
       return { start: null, end: null };
     }
-  }, [periodDayOffsets, currentMonth, currentYear]);
+  }, [periodSelection, periodDayOffsets, currentMonth, currentYear]);
   
   const periodStart = periodDates.start;
   const periodEnd = periodDates.end;
