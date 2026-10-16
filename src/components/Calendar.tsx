@@ -81,6 +81,21 @@ export const Calendar: React.FC<CalendarProps> = ({
   // Store period as day offsets (e.g., {startDay: 16, endDay: 15} means 16th of last month to 15th of this month)
   const periodDayOffsets = periodSelection?.dayOffsets || null;
   
+  const [showPeriodPicker, setShowPeriodPicker] = useState(false);
+  const [periodPickerStep, setPeriodPickerStep] = useState<'start' | 'end'>('start');
+  const [periodPickerMonth, setPeriodPickerMonth] = useState(new Date(currentDate));
+  const [periodSwipeX, setPeriodSwipeX] = useState(0);
+  const [isPeriodSwiping, setIsPeriodSwiping] = useState(false);
+  const periodSwipeStartX = useRef(0);
+  const periodSwipeCurrentX = useRef(0);
+  const calendarGridRef = useRef<HTMLDivElement>(null);
+  const animatedElementsRef = useRef<Set<HTMLElement>>(new Set());
+  
+  const today = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  // Calculate period dates based on day offsets and current viewed month
   const periodDates = useMemo(() => {
     if (!periodDayOffsets || !periodDayOffsets.startDay) return { start: null, end: null };
     
@@ -125,19 +140,6 @@ export const Calendar: React.FC<CalendarProps> = ({
   
   const periodStart = periodDates.start;
   const periodEnd = periodDates.end;
-  const [showPeriodPicker, setShowPeriodPicker] = useState(false);
-  const [periodPickerStep, setPeriodPickerStep] = useState<'start' | 'end'>('start');
-  const [periodPickerMonth, setPeriodPickerMonth] = useState(new Date(currentDate));
-  const [periodSwipeX, setPeriodSwipeX] = useState(0);
-  const [isPeriodSwiping, setIsPeriodSwiping] = useState(false);
-  const periodSwipeStartX = useRef(0);
-  const periodSwipeCurrentX = useRef(0);
-  const calendarGridRef = useRef<HTMLDivElement>(null);
-  const animatedElementsRef = useRef<Set<HTMLElement>>(new Set());
-  
-  const today = new Date();
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
   const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
   const firstDayWeekday = firstDayOfMonth.getDay();
