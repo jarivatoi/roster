@@ -335,12 +335,10 @@ export const Calendar: React.FC<CalendarProps> = ({
     const endDate = new Date(endStr);
     const startYear = startDate.getFullYear();
     const endYear = endDate.getFullYear();
-    
+
     if (startYear === endYear) {
-      // Same year: "1 Dec - 29 Dec 2026"
       return `${formatPeriodDate(startStr)} - ${formatPeriodDate(endStr)} ${startYear}`;
     } else {
-      // Different years: "29 Dec 2026 - 3 Jan 2027"
       return `${formatPeriodDateWithYear(startStr)} - ${formatPeriodDateWithYear(endStr)}`;
     }
   };
@@ -1486,7 +1484,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   <span className="text-base sm:text-lg font-semibold text-green-800 select-none">
-                    {periodStart && periodEnd ? `Period (${formatPeriodDate(periodStart)} - ${formatPeriodDate(today.toISOString().split('T')[0])})` : 'Month to Date'}
+                    {periodStart && periodEnd ? `Period (${formatPeriodDate(periodStart)} - Today)` : 'Month to Date'}
                   </span>
                 </div>
                 <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
@@ -1495,7 +1493,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               </div>
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
-                  ? `Amount earned from ${formatPeriodRange(periodStart, today.toISOString().split('T')[0])}`
+                  ? `Amount earned from ${formatPeriodDate(periodStart)} to Today`
                   : `Amount earned from start of month to today (${today.getDate()}/${currentMonth + 1}/${currentYear})`
                 }
               </p>
