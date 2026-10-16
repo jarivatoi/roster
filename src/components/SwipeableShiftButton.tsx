@@ -38,8 +38,8 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   const MAX_SWIPE = 100;
 
   // Can we swipe in each direction?
-  const canSwipeLeft = isSelected && hasOvertime;   // swipe left → overtime
-  const canSwipeRight = isSelected && hasPublicHoliday; // swipe right → public holiday
+  const canSwipeLeft = isSelected;   // swipe left → overtime (always available when selected)
+  const canSwipeRight = isSelected && hasPublicHoliday; // swipe right → public holiday (only if configured)
 
   const clampDrag = (diff: number) => {
     let min = -MAX_SWIPE;
@@ -162,7 +162,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
       )}
 
       {/* RIGHT overlay — revealed when button slides LEFT (Overtime) */}
-      {isSelected && hasOvertime && (
+      {isSelected && (
         <div
           style={{
             position: 'absolute',
