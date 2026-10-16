@@ -1326,6 +1326,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                         const dateKey = formatDateKey(day);
                         const shiftMode = shiftModes?.[`${dateKey}|${shiftId}`];
                         const textColor = shiftMode === 'publicHoliday' ? 'text-green-600' : shiftMode === 'overtime' ? 'text-black' : 'text-red-600';
+                        const displayText = shiftMode === 'publicHoliday' ? `${shift.time} (PH)` : shift.time;
                         return shift ? (
                           <div
                             key={`${shiftId}-${idx}`}
@@ -1334,7 +1335,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                             } ${isPastDate(day) ? 'opacity-60' : ''}`}
                           >
                             <ScrollingText 
-                              text={shift.time} 
+                              text={displayText} 
                               pauseDuration={1}
                               scrollDuration={2.5}
                               className="text-center select-none px-0.5"
