@@ -2029,9 +2029,9 @@ export const Calendar: React.FC<CalendarProps> = ({
                       {Array.from({ length: daysInPickerMonth }, (_, i) => {
                         const day = i + 1;
                         const dateStr = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const isStart = dateStr === periodStart;
-                        const isEnd = dateStr === periodEnd;
-                        const isInRange = periodStart && periodEnd && dateStr >= periodStart && dateStr <= periodEnd;
+                        const isStart = dateStr === periodSelection?.start;
+                        const isEnd = dateStr === periodSelection?.end;
+                        const isInRange = periodSelection?.start && periodSelection?.end && dateStr >= periodSelection.start && dateStr <= periodSelection.end;
                         
                         return (
                           <button
