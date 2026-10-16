@@ -15,7 +15,7 @@ export interface ExcludedShifts {
 }
 
 export interface ShiftModes {
-  [key: string]: 'overtime' | 'publicHoliday'; // "date|shiftId" -> mode (absent = normal)
+  [key: string]: 'normal' | 'overtime' | 'publicHoliday'; // "date|shiftId" -> mode (absent = overtime/default)
 }
 
 export interface SpecialDates {

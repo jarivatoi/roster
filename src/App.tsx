@@ -91,6 +91,22 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   const [scheduleTitle, setScheduleTitle] = useIndexedDB<string>('scheduleTitle', 'Work Schedule', 'metadata');
   const [monthlySalaries, setMonthlySalaries] = useIndexedDB<Record<string, number>>('monthlySalaries', {}, 'metadata');
   const [shiftModes, setShiftModes] = useIndexedDB<ShiftModes>('shiftModes', {});
+  
+  // Migration: Remove old 'normal' entries from shiftModes (from commit c0f70c8)
+  // In the current scheme, 'normal' mode (BLACK, not counted) is stored in the map,
+  // but we need to clear any stale entries from the previous version
+  useEffect(() => {
+    if (shiftModes && Object.keys(shiftModes).length > 0) {
+      const hasNormalEntries = Object.values(shiftModes).some(mode => mode === 'normal');
+      if (hasNormalEntries) {
+        // Remove all 'normal' entries to reset to default 'overtime' (RED)
+        const cleaned = Object.fromEntries(
+          Object.entries(shiftModes).filter(([_, mode]) => mode !== 'normal')
+        );
+        setShiftModes(cleaned);
+      }
+    }
+  }, []); // Run only once on mount
   const [periodSelection, setPeriodSelection] = useIndexedDB<{start: string | null, end: string | null}>('periodSelection', {start: null, end: null}, 'metadata');
   const [settings, setSettings] = useIndexedDB<Settings & { useManualMode?: boolean }>('workSettings', {
     basicSalary: 35000,
