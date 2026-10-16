@@ -20,8 +20,8 @@ interface CalendarProps {
   dateNotes: DateNotes;
   settings?: Settings;
   shiftModes?: ShiftModes;
-  periodSelection?: {start: string | null, end: string | null};
-  onPeriodChange?: (period: {start: string | null, end: string | null}) => void;
+  periodSelection?: {dayOffsets: {startDay: number, endDay: number | null} | null, start: string | null, end: string | null};
+  onPeriodChange?: (period: {dayOffsets: {startDay: number, endDay: number | null} | null, start: string | null, end: string | null}) => void;
   onDateClick: (day: number) => void;
   onNavigateMonth: (direction: 'prev' | 'next') => void;
   totalAmount: number;
@@ -83,38 +83,45 @@ export const Calendar: React.FC<CalendarProps> = ({
   
   // Calculate actual period dates based on current month
   const calculatePeriodDates = () => {
-    if (!periodDayOffsets) return { start: null, end: null };
+    if (!periodDayOffsets || !periodDayOffsets.startDay) return { start: null, end: null };
     
-    const currentMonthDate = new Date(currentYear, currentMonth, 1);
-    const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
-    
-    // Check if start day exists in last month
-    const startDay = periodDayOffsets.startDay;
-    const lastMonthDays = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0).getDate();
-    if (startDay > lastMonthDays) {
-      // Start day doesn't exist in last month, default to monthly
+    try {
+      const currentMonthDate = new Date(currentYear, currentMonth, 1);
+      const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+      
+      // Check if start day exists in last month
+      const startDay = periodDayOffsets.startDay;
+      const lastMonthDays = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0).getDate();
+      if (startDay > lastMonthDays || startDay < 1) {
+        // Start day doesn't exist in last month, default to monthly
+        return { start: null, end: null };
+      }
+      const startDate = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), startDay);
+      
+      // Check if end day exists in current month (if endDay is set)
+      const endDay = periodDayOffsets.endDay;
+      if (endDay !== null && endDay !== undefined) {
+        const currentMonthDays = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0).getDate();
+        if (endDay > currentMonthDays || endDay < 1) {
+          // End day doesn't exist in current month, default to monthly
+          return { start: null, end: null };
+        }
+      }
+      const endDate = endDay ? new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth(), endDay) : null;
+      
+      // Format as YYYY-MM-DD
+      const formatDate = (date: Date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+      
+      return {
+        start: formatDate(startDate),
+        end: endDate ? formatDate(endDate) : null
+      };
+    } catch (error) {
+      console.error('Error calculating period dates:', error);
       return { start: null, end: null };
     }
-    const startDate = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), startDay);
-    
-    // Check if end day exists in current month
-    const endDay = periodDayOffsets.endDay;
-    const currentMonthDays = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0).getDate();
-    if (endDay > currentMonthDays) {
-      // End day doesn't exist in current month, default to monthly
-      return { start: null, end: null };
-    }
-    const endDate = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth(), endDay);
-    
-    // Format as YYYY-MM-DD
-    const formatDate = (date: Date) => {
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    };
-    
-    return {
-      start: formatDate(startDate),
-      end: formatDate(endDate)
-    };
   };
   
   const periodDates = calculatePeriodDates();
