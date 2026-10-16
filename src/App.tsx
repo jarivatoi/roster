@@ -769,10 +769,12 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
             const shiftKey = `${dateKey}|${shiftId}`;
             setShiftModes(prev => {
               const next = { ...prev };
-              if (mode === 'normal') {
+              if (mode === 'overtime') {
+                // Overtime is the default (counted), so delete the key
                 delete next[shiftKey];
               } else {
-                next[shiftKey] = mode as 'overtime' | 'publicHoliday';
+                // Store 'normal' (not counted) and 'publicHoliday' in the map
+                next[shiftKey] = mode as 'normal' | 'publicHoliday';
               }
               return next;
             });

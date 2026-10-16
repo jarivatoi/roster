@@ -529,7 +529,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               const showMaxSelection = maxReached && !canSelect;
               const showOverlap = !canSelect && !maxReached && !isSelected; // Only show if NOT already selected
               const shiftModeKey = `${selectedDate}|${shift.id}`;
-              const currentMode: ShiftMode = shiftModes?.[shiftModeKey] || 'normal';
+              const currentMode: ShiftMode = shiftModes?.[shiftModeKey] || 'overtime';
               const hasOvertime = (shift.overtimeHours || 0) > 0;
               const hasPublicHoliday = (shift.publicHolidayHours || 0) > 0;
 

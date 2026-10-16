@@ -1363,7 +1363,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                         const shift = getShiftDisplay(shiftId);
                         const dateKey = formatDateKey(day);
                         const shiftMode = shiftModes?.[`${dateKey}|${shiftId}`];
-                        const textColor = shiftMode === 'publicHoliday' ? 'text-green-600' : shiftMode === 'overtime' ? 'text-red-600' : 'text-black';
+                        const textColor = shiftMode === 'publicHoliday' ? 'text-green-600' : shiftMode === 'normal' ? 'text-black' : 'text-red-600';
                         return shift ? (
                           <div
                             key={`${shiftId}-${idx}`}
