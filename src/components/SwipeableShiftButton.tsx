@@ -177,7 +177,9 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
               boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              border: 'none'
+              border: 'none',
+              textAlign: 'center',
+              whiteSpace: 'nowrap'
             }}
           >
             {leftOverlayLabel}
@@ -212,7 +214,9 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
               textTransform: 'uppercase',
               letterSpacing: '0.5px',
               boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              border: 'none'
+              border: 'none',
+              textAlign: 'center',
+              whiteSpace: 'nowrap'
             }}
           >
             {rightOverlayLabel}
