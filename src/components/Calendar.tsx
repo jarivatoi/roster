@@ -265,6 +265,26 @@ export const Calendar: React.FC<CalendarProps> = ({
     return `${date.getDate()} ${monthNames[date.getMonth()].substring(0, 3)}`;
   };
 
+  const formatPeriodDateWithYear = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.getDate()} ${monthNames[date.getMonth()].substring(0, 3)} ${date.getFullYear()}`;
+  };
+
+  const formatPeriodRange = (startStr: string, endStr: string) => {
+    const startDate = new Date(startStr);
+    const endDate = new Date(endStr);
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+    
+    if (startYear === endYear) {
+      // Same year: "1 Dec - 29 Dec 2026"
+      return `${formatPeriodDate(startStr)} - ${formatPeriodDate(endStr)} ${startYear}`;
+    } else {
+      // Different years: "29 Dec 2026 - 3 Jan 2027"
+      return `${formatPeriodDateWithYear(startStr)} - ${formatPeriodDateWithYear(endStr)}`;
+    }
+  };
+
   // Prevent body scroll when date picker modal is open - EXACTLY LIKE OTHER MODALS
   useEffect(() => {
     if (showDatePicker || showImportModal) {
@@ -1420,7 +1440,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               </p>
               {periodStart && periodEnd && (
                 <p className="text-xs text-green-500 mt-1 text-center select-none">
-                  {periodStart.split('-')[0]} - {today.getFullYear()}
+                  {formatPeriodRange(periodStart, today.toISOString().split('T')[0])}
                 </p>
               )}
             </div>
@@ -1505,7 +1525,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               </p>
               {periodStart && periodEnd && (
                 <p className="text-xs text-indigo-500 mt-1 text-center select-none">
-                  {periodStart.split('-')[0]} - {periodEnd.split('-')[0]}
+                  {formatPeriodRange(periodStart, periodEnd)}
                 </p>
               )}
             </div>
