@@ -78,8 +78,48 @@ export const Calendar: React.FC<CalendarProps> = ({
   const [importResults, setImportResults] = useState<{added: number, skipped: number, errors: number} | null>(null);
   const [tempMonthlySalary, setTempMonthlySalary] = useState('');
   // Period-based calculation state
-  const periodStart = periodSelection?.start || null;
-  const periodEnd = periodSelection?.end || null;
+  // Store period as day offsets (e.g., {startDay: 16, endDay: 15} means 16th of last month to 15th of this month)
+  const periodDayOffsets = periodSelection?.dayOffsets || null;
+  
+  // Calculate actual period dates based on current month
+  const calculatePeriodDates = () => {
+    if (!periodDayOffsets) return { start: null, end: null };
+    
+    const currentMonthDate = new Date(currentYear, currentMonth, 1);
+    const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+    
+    // Check if start day exists in last month
+    const startDay = periodDayOffsets.startDay;
+    const lastMonthDays = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0).getDate();
+    if (startDay > lastMonthDays) {
+      // Start day doesn't exist in last month, default to monthly
+      return { start: null, end: null };
+    }
+    const startDate = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), startDay);
+    
+    // Check if end day exists in current month
+    const endDay = periodDayOffsets.endDay;
+    const currentMonthDays = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0).getDate();
+    if (endDay > currentMonthDays) {
+      // End day doesn't exist in current month, default to monthly
+      return { start: null, end: null };
+    }
+    const endDate = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth(), endDay);
+    
+    // Format as YYYY-MM-DD
+    const formatDate = (date: Date) => {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    
+    return {
+      start: formatDate(startDate),
+      end: formatDate(endDate)
+    };
+  };
+  
+  const periodDates = calculatePeriodDates();
+  const periodStart = periodDates.start;
+  const periodEnd = periodDates.end;
   const [showPeriodPicker, setShowPeriodPicker] = useState(false);
   const [periodPickerStep, setPeriodPickerStep] = useState<'start' | 'end'>('start');
   const [periodPickerMonth, setPeriodPickerMonth] = useState(new Date(currentDate));
@@ -230,14 +270,16 @@ export const Calendar: React.FC<CalendarProps> = ({
     const dateStr = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
     if (periodPickerStep === 'start') {
-      onPeriodChange?.({start: dateStr, end: null});
+      // Store the day offset for the start date
+      onPeriodChange?.({ dayOffsets: { startDay: day, endDay: null }, start: dateStr, end: null });
       setPeriodPickerStep('end');
     } else {
-      if (periodStart && dateStr < periodStart) {
-        // If end is before start, swap them
-        onPeriodChange?.({start: dateStr, end: periodStart});
+      const startDay = periodSelection?.dayOffsets?.startDay;
+      if (startDay && day < startDay) {
+        // If end day is before start day, swap them
+        onPeriodChange?.({ dayOffsets: { startDay: day, endDay: startDay }, start: dateStr, end: periodStart });
       } else {
-        onPeriodChange?.({start: periodStart, end: dateStr});
+        onPeriodChange?.({ dayOffsets: { startDay: startDay || day, endDay: day }, start: periodStart, end: dateStr });
       }
       setShowPeriodPicker(false);
       setPeriodPickerStep('start');
@@ -245,7 +287,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const clearPeriod = () => {
-    onPeriodChange?.({start: null, end: null});
+    onPeriodChange?.({ dayOffsets: null, start: null, end: null });
   };
 
   const navigatePeriodPickerMonth = (direction: 'prev' | 'next') => {

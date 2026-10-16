@@ -91,7 +91,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   const [scheduleTitle, setScheduleTitle] = useIndexedDB<string>('scheduleTitle', 'Work Schedule', 'metadata');
   const [monthlySalaries, setMonthlySalaries] = useIndexedDB<Record<string, number>>('monthlySalaries', {}, 'metadata');
   const [shiftModes, setShiftModes] = useIndexedDB<ShiftModes>('shiftModes', {});
-  const [periodSelection, setPeriodSelection] = useIndexedDB<{start: string | null, end: string | null}>('periodSelection', {start: null, end: null}, 'metadata');
+  const [periodSelection, setPeriodSelection] = useIndexedDB<{dayOffsets: {startDay: number, endDay: number | null} | null, start: string | null, end: string | null}>('periodSelection', {dayOffsets: null, start: null, end: null}, 'metadata');
   const [settings, setSettings] = useIndexedDB<Settings & { useManualMode?: boolean }>('workSettings', {
     basicSalary: 35000,
     hourlyRate: 201.92,

@@ -9,6 +9,7 @@ interface ScrollingTextProps {
   pauseDuration?: number;
   scrollDuration?: number;
   easing?: string;
+  style?: React.CSSProperties;
 }
 
 export const ScrollingText: React.FC<ScrollingTextProps> = ({ 
