@@ -149,6 +149,10 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   // RIGHT overlay is revealed when swiping LEFT (toggles normal <-> overtime)
   const leftOverlayLabel = mode === 'publicHoliday' ? 'Normal' : 'Public Holiday';
   const rightOverlayLabel = mode === 'overtime' ? 'Normal' : 'Overtime';
+  
+  // Overlay background colors match the TARGET mode
+  const leftOverlayBg = mode === 'publicHoliday' ? '#ef4444' : '#10b981'; // RED for Normal, GREEN for PH
+  const rightOverlayBg = mode === 'overtime' ? '#ef4444' : '#1f2937'; // RED for Normal, BLACK for Overtime
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '0.5rem' }}>
@@ -161,7 +165,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
             left: 0,
             bottom: 0,
             width: `${MAX_SWIPE}px`,
-            backgroundColor: '#10b981',
+            backgroundColor: leftOverlayBg,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -173,7 +177,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
               backgroundColor: 'white',
               borderRadius: '20px',
               padding: '6px 14px',
-              color: '#10b981',
+              color: leftOverlayBg,
               fontWeight: 600,
               fontSize: '0.7rem',
               textTransform: 'uppercase',
@@ -181,7 +185,9 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
               boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
               border: 'none',
               textAlign: 'center',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'normal',
+              lineHeight: '1.2',
+              maxWidth: '80px'
             }}
           >
             {leftOverlayLabel}
@@ -198,7 +204,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
             right: 0,
             bottom: 0,
             width: `${MAX_SWIPE}px`,
-            backgroundColor: '#10b981',
+            backgroundColor: rightOverlayBg,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -210,7 +216,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
               backgroundColor: 'white',
               borderRadius: '20px',
               padding: '6px 14px',
-              color: '#10b981',
+              color: rightOverlayBg,
               fontWeight: 600,
               fontSize: '0.7rem',
               textTransform: 'uppercase',
