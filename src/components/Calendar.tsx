@@ -291,9 +291,11 @@ export const Calendar: React.FC<CalendarProps> = ({
       setPeriodPickerStep('end');
     } else {
       const startDay = periodSelection?.dayOffsets?.startDay;
-      if (startDay && day < startDay) {
-        // If end day is before start day, swap them
-        onPeriodChange?.({ dayOffsets: { startDay: day, endDay: startDay }, start: dateStr, end: periodStart });
+      // Compare full date strings to correctly handle cross-month selections
+      const selectedDateStr = periodSelection?.start;
+      if (selectedDateStr && dateStr < selectedDateStr) {
+        // If selected end date is before start date, swap them
+        onPeriodChange?.({ dayOffsets: { startDay: day, endDay: startDay ?? null }, start: dateStr, end: periodStart });
       } else {
         onPeriodChange?.({ dayOffsets: { startDay: startDay || day, endDay: day }, start: periodStart, end: dateStr });
       }
