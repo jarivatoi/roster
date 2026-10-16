@@ -73,9 +73,6 @@ export const useScheduleCalculations = (
         const shiftKey = `${dateKey}|${shiftId}`;
         const mode = shiftModes?.[shiftKey];
         
-        // Debug: Log shift modes
-        console.log(`Shift ${shiftKey}: mode = ${mode}, will be ${mode === 'normal' ? 'SKIPPED' : 'INCLUDED'}`);
-        
         // Normal shifts (BLACK, not counted) are excluded from totals
         if (mode === 'normal') {
           return;
