@@ -72,9 +72,21 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
     const diff = currentX.current - startX.current;
 
     if (diff < -SWIPE_THRESHOLD && canSwipeLeft) {
-      onSetMode(mode === 'overtime' ? 'normal' : 'overtime');
+      // Swipe left: toggle between normal and overtime
+      // If in PH mode, go to normal first (not directly to overtime)
+      if (mode === 'publicHoliday') {
+        onSetMode('normal');
+      } else {
+        onSetMode(mode === 'overtime' ? 'normal' : 'overtime');
+      }
     } else if (diff > SWIPE_THRESHOLD && canSwipeRight) {
-      onSetMode(mode === 'publicHoliday' ? 'normal' : 'publicHoliday');
+      // Swipe right: toggle between normal and publicHoliday
+      // If in overtime mode, go to normal first (not directly to PH)
+      if (mode === 'overtime') {
+        onSetMode('normal');
+      } else {
+        onSetMode(mode === 'publicHoliday' ? 'normal' : 'publicHoliday');
+      }
     }
     setTranslateX(0);
   };
@@ -107,9 +119,21 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
 
     const diff = currentX.current - startX.current;
     if (diff < -SWIPE_THRESHOLD && canSwipeLeft) {
-      onSetMode(mode === 'overtime' ? 'normal' : 'overtime');
+      // Swipe left: toggle between normal and overtime
+      // If in PH mode, go to normal first (not directly to overtime)
+      if (mode === 'publicHoliday') {
+        onSetMode('normal');
+      } else {
+        onSetMode(mode === 'overtime' ? 'normal' : 'overtime');
+      }
     } else if (diff > SWIPE_THRESHOLD && canSwipeRight) {
-      onSetMode(mode === 'publicHoliday' ? 'normal' : 'publicHoliday');
+      // Swipe right: toggle between normal and publicHoliday
+      // If in overtime mode, go to normal first (not directly to PH)
+      if (mode === 'overtime') {
+        onSetMode('normal');
+      } else {
+        onSetMode(mode === 'publicHoliday' ? 'normal' : 'publicHoliday');
+      }
     }
     setTranslateX(0);
   };
@@ -121,13 +145,13 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   };
 
   // Overlay labels show the mode the button will switch TO
-  const leftOverlayLabel = mode === 'overtime' ? 'Normal' : 'Overtime';
-  const rightOverlayLabel = mode === 'publicHoliday' ? 'Normal' : 'Public Holiday';
+  const leftOverlayLabel = mode === 'publicHoliday' ? 'Normal' : 'Public Holiday';
+  const rightOverlayLabel = mode === 'overtime' ? 'Normal' : 'Overtime';
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '0.5rem' }}>
-      {/* LEFT overlay — revealed when button slides LEFT (Overtime/Black/Not-counted) */}
-      {isSelected && (
+      {/* LEFT overlay — revealed when button slides RIGHT (Public Holiday) */}
+      {isSelected && hasPublicHoliday && (
         <div
           style={{
             position: 'absolute',
@@ -161,8 +185,8 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
         </div>
       )}
 
-      {/* RIGHT overlay — revealed when button slides RIGHT (Public Holiday/Green/Counted) */}
-      {isSelected && hasPublicHoliday && (
+      {/* RIGHT overlay — revealed when button slides LEFT (Overtime) */}
+      {isSelected && (
         <div
           style={{
             position: 'absolute',

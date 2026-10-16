@@ -20,6 +20,8 @@ interface CalendarProps {
   dateNotes: DateNotes;
   settings?: Settings;
   shiftModes?: ShiftModes;
+  periodSelection?: {start: string | null, end: string | null};
+  onPeriodChange?: (period: {start: string | null, end: string | null}) => void;
   onDateClick: (day: number) => void;
   onNavigateMonth: (direction: 'prev' | 'next') => void;
   totalAmount: number;
@@ -43,6 +45,8 @@ export const Calendar: React.FC<CalendarProps> = ({
   dateNotes,
   settings,
   shiftModes,
+  periodSelection,
+  onPeriodChange,
   onDateClick,
   onNavigateMonth,
   totalAmount,
@@ -74,10 +78,11 @@ export const Calendar: React.FC<CalendarProps> = ({
   const [importResults, setImportResults] = useState<{added: number, skipped: number, errors: number} | null>(null);
   const [tempMonthlySalary, setTempMonthlySalary] = useState('');
   // Period-based calculation state
-  const [periodStart, setPeriodStart] = useState<string | null>(null);
-  const [periodEnd, setPeriodEnd] = useState<string | null>(null);
+  const periodStart = periodSelection?.start || null;
+  const periodEnd = periodSelection?.end || null;
   const [showPeriodPicker, setShowPeriodPicker] = useState(false);
   const [periodPickerStep, setPeriodPickerStep] = useState<'start' | 'end'>('start');
+  const [periodPickerMonth, setPeriodPickerMonth] = useState(new Date(currentDate));
   const [periodSwipeX, setPeriodSwipeX] = useState(0);
   const [isPeriodSwiping, setIsPeriodSwiping] = useState(false);
   const periodSwipeStartX = useRef(0);
@@ -220,26 +225,39 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const handlePeriodDateSelect = (day: number) => {
-    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const pickerYear = periodPickerMonth.getFullYear();
+    const pickerMonth = periodPickerMonth.getMonth();
+    const dateStr = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
     if (periodPickerStep === 'start') {
-      setPeriodStart(dateStr);
+      onPeriodChange?.({start: dateStr, end: null});
       setPeriodPickerStep('end');
     } else {
       if (periodStart && dateStr < periodStart) {
         // If end is before start, swap them
-        setPeriodEnd(periodStart);
-        setPeriodStart(dateStr);
+        onPeriodChange?.({start: dateStr, end: periodStart});
       } else {
-        setPeriodEnd(dateStr);
+        onPeriodChange?.({start: periodStart, end: dateStr});
       }
       setShowPeriodPicker(false);
+      setPeriodPickerStep('start');
     }
   };
 
   const clearPeriod = () => {
-    setPeriodStart(null);
-    setPeriodEnd(null);
+    onPeriodChange?.({start: null, end: null});
+  };
+
+  const navigatePeriodPickerMonth = (direction: 'prev' | 'next') => {
+    setPeriodPickerMonth(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
   };
 
   const formatPeriodDate = (dateStr: string) => {
@@ -1887,22 +1905,36 @@ export const Calendar: React.FC<CalendarProps> = ({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1f2937', margin: 0 }}>
-                {periodPickerStep === 'start' ? 'Select Start Date' : 'Select End Date'}
-              </h3>
               <button
-                onClick={() => setShowPeriodPicker(false)}
+                onClick={() => navigatePeriodPickerMonth('prev')}
                 style={{
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  padding: '4px',
+                  padding: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
               >
-                <X style={{ width: '24px', height: '24px', color: '#6b7280' }} />
+                <ChevronLeft style={{ width: '24px', height: '24px', color: '#6b7280' }} />
+              </button>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1f2937', margin: 0 }}>
+                {monthNames[periodPickerMonth.getMonth()]} {periodPickerMonth.getFullYear()}
+              </h3>
+              <button
+                onClick={() => navigatePeriodPickerMonth('next')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <ChevronRight style={{ width: '24px', height: '24px', color: '#6b7280' }} />
               </button>
             </div>
 
@@ -1923,35 +1955,47 @@ export const Calendar: React.FC<CalendarProps> = ({
                 ))}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-                {Array.from({ length: firstDayWeekday }, (_, i) => (
-                  <div key={`empty-${i}`} />
-                ))}
-                {Array.from({ length: daysInMonth }, (_, i) => {
-                  const day = i + 1;
-                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                  const isSelected = dateStr === periodStart || dateStr === periodEnd;
-                  const isInRange = periodStart && periodEnd && dateStr >= periodStart && dateStr <= periodEnd;
+                {(() => {
+                  const pickerYear = periodPickerMonth.getFullYear();
+                  const pickerMonth = periodPickerMonth.getMonth();
+                  const firstDay = new Date(pickerYear, pickerMonth, 1);
+                  const firstDayWeekday = firstDay.getDay();
+                  const daysInPickerMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
                   
                   return (
-                    <button
-                      key={day}
-                      onClick={() => handlePeriodDateSelect(day)}
-                      style={{
-                        padding: '10px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        backgroundColor: isSelected ? '#6366f1' : isInRange ? '#e0e7ff' : 'transparent',
-                        color: isSelected ? 'white' : isInRange ? '#4f46e5' : '#1f2937',
-                        fontWeight: isSelected ? 600 : 400,
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {day}
-                    </button>
+                    <>
+                      {Array.from({ length: firstDayWeekday }, (_, i) => (
+                        <div key={`empty-${i}`} />
+                      ))}
+                      {Array.from({ length: daysInPickerMonth }, (_, i) => {
+                        const day = i + 1;
+                        const dateStr = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const isSelected = dateStr === periodStart || dateStr === periodEnd;
+                        const isInRange = periodStart && periodEnd && dateStr >= periodStart && dateStr <= periodEnd;
+                        
+                        return (
+                          <button
+                            key={day}
+                            onClick={() => handlePeriodDateSelect(day)}
+                            style={{
+                              padding: '10px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              backgroundColor: isSelected ? '#6366f1' : isInRange ? '#e0e7ff' : 'transparent',
+                              color: isSelected ? 'white' : isInRange ? '#4f46e5' : '#1f2937',
+                              fontWeight: isSelected ? 600 : 400,
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </>
                   );
-                })}
+                })()}
               </div>
             </div>
 

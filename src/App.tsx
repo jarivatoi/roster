@@ -91,6 +91,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   const [scheduleTitle, setScheduleTitle] = useIndexedDB<string>('scheduleTitle', 'Work Schedule', 'metadata');
   const [monthlySalaries, setMonthlySalaries] = useIndexedDB<Record<string, number>>('monthlySalaries', {}, 'metadata');
   const [shiftModes, setShiftModes] = useIndexedDB<ShiftModes>('shiftModes', {});
+  const [periodSelection, setPeriodSelection] = useIndexedDB<{start: string | null, end: string | null}>('periodSelection', {start: null, end: null}, 'metadata');
   const [settings, setSettings] = useIndexedDB<Settings & { useManualMode?: boolean }>('workSettings', {
     basicSalary: 35000,
     hourlyRate: 201.92,
@@ -400,6 +401,8 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
             dateNotes={dateNotes}
             settings={settings}
             shiftModes={shiftModes}
+            periodSelection={periodSelection}
+            onPeriodChange={setPeriodSelection}
             onDateClick={handleDateClick}
             onNavigateMonth={navigateMonth}
             totalAmount={totalAmount}
@@ -537,6 +540,8 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
             specialDates={specialDates}
             dateNotes={dateNotes}
             shiftModes={shiftModes}
+            periodSelection={periodSelection}
+            onPeriodChange={setPeriodSelection}
             onDateClick={handleDateClick}
             onNavigateMonth={navigateMonth}
             totalAmount={totalAmount}
