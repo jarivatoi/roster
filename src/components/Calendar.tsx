@@ -150,8 +150,8 @@ export const Calendar: React.FC<CalendarProps> = ({
         const shiftKey = `${dateKey}|${shiftId}`;
         const mode = shiftModes?.[shiftKey];
 
-        // Skip overtime shifts
-        if (mode === 'overtime') return;
+        // Skip normal shifts (BLACK, not counted)
+        if (mode === 'normal') return;
 
         let shiftAmount = 0;
 
