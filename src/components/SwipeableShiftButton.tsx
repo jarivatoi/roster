@@ -145,6 +145,8 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   };
 
   // Overlay labels show the mode the button will switch TO
+  // LEFT overlay is revealed when swiping RIGHT (toggles normal <-> publicHoliday)
+  // RIGHT overlay is revealed when swiping LEFT (toggles normal <-> overtime)
   const leftOverlayLabel = mode === 'publicHoliday' ? 'Normal' : 'Public Holiday';
   const rightOverlayLabel = mode === 'overtime' ? 'Normal' : 'Overtime';
 
