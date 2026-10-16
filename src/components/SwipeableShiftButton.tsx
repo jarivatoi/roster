@@ -77,7 +77,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
       if (mode === 'publicHoliday') {
         onSetMode('normal');
       } else {
-        onSetMode(mode === 'overtime' ? 'normal' : 'overtime');
+        onSetMode(mode === 'normal' ? 'overtime' : 'normal');
       }
     } else if (diff > SWIPE_THRESHOLD && canSwipeRight) {
       // Swipe right: toggle between normal and publicHoliday
@@ -124,7 +124,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
       if (mode === 'publicHoliday') {
         onSetMode('normal');
       } else {
-        onSetMode(mode === 'overtime' ? 'normal' : 'overtime');
+        onSetMode(mode === 'normal' ? 'overtime' : 'normal');
       }
     } else if (diff > SWIPE_THRESHOLD && canSwipeRight) {
       // Swipe right: toggle between normal and publicHoliday
@@ -148,11 +148,11 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   // LEFT overlay is revealed when swiping RIGHT (toggles normal <-> publicHoliday)
   // RIGHT overlay is revealed when swiping LEFT (toggles normal <-> overtime)
   const leftOverlayLabel = mode === 'publicHoliday' ? 'Normal' : 'Public Holiday';
-  const rightOverlayLabel = mode === 'overtime' ? 'Normal' : 'Overtime';
+  const rightOverlayLabel = mode === 'normal' ? 'Overtime' : 'Normal';
   
   // Overlay background colors match the TARGET mode
-  const leftOverlayBg = mode === 'publicHoliday' ? '#ef4444' : '#10b981'; // RED for Normal, GREEN for PH
-  const rightOverlayBg = mode === 'overtime' ? '#ef4444' : '#1f2937'; // RED for Normal, BLACK for Overtime
+  const leftOverlayBg = mode === 'publicHoliday' ? '#1f2937' : '#10b981'; // BLACK for Normal, GREEN for PH
+  const rightOverlayBg = mode === 'normal' ? '#ef4444' : '#1f2937'; // RED for Overtime, BLACK for Normal
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '0.5rem' }}>

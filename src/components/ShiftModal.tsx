@@ -547,7 +547,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                     isSelected
                       ? currentMode === 'publicHoliday'
                         ? 'bg-green-50 border-green-400 shadow-md transform scale-[1.02]'
-                        : currentMode === 'overtime'
+                        : currentMode === 'normal'
                           ? 'bg-white border-gray-400 shadow-md transform scale-[1.02]'
                           : `${shift.color} border-current shadow-md transform scale-[1.02]`
                       : isDisabled
@@ -565,7 +565,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                       <div className={`font-semibold select-none ${
                         isSelected && currentMode === 'publicHoliday'
                           ? 'text-green-600'
-                          : isSelected && currentMode === 'overtime'
+                          : isSelected && currentMode === 'normal'
                             ? 'text-black'
                             : 'text-red-600'
                       }`}>{shift.label}</div>
@@ -580,7 +580,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                           Cannot be added in shift combination
                         </div>
                       )}
-                      {isSelected && currentMode === 'overtime' && (
+                      {isSelected && currentMode === 'normal' && (
                         <div className="text-xs mt-1 text-gray-600 font-semibold select-none italic">
                           Normal Shift
                         </div>
@@ -595,11 +595,11 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                       <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.25))' }}>
                         <defs>
                           <linearGradient id={`tick-grad-${shift.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor={currentMode === 'overtime' ? '#555' : currentMode === 'publicHoliday' ? '#4ade80' : '#4ade80'} />
-                            <stop offset="100%" stopColor={currentMode === 'overtime' ? '#222' : currentMode === 'publicHoliday' ? '#16a34a' : '#16a34a'} />
+                            <stop offset="0%" stopColor={currentMode === 'normal' ? '#555' : currentMode === 'publicHoliday' ? '#4ade80' : '#4ade80'} />
+                            <stop offset="100%" stopColor={currentMode === 'normal' ? '#222' : currentMode === 'publicHoliday' ? '#16a34a' : '#16a34a'} />
                           </linearGradient>
                         </defs>
-                        <circle cx="14" cy="14" r="13" fill={`url(#tick-grad-${shift.id})`} stroke={currentMode === 'overtime' ? '#333' : '#15803d'} strokeWidth="1" />
+                        <circle cx="14" cy="14" r="13" fill={`url(#tick-grad-${shift.id})`} stroke={currentMode === 'normal' ? '#333' : '#15803d'} strokeWidth="1" />
                         <circle cx="14" cy="11" r="10" fill="rgba(255,255,255,0.15)" />
                         <path d="M8 14.5 L12 18.5 L20 10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>

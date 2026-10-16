@@ -69,12 +69,12 @@ export const useScheduleCalculations = (
       
       // Calculate each shift individually for proper amount calculation
       dayShifts.forEach(shiftId => {
-        // Check shift mode: overtime = skip, publicHoliday = special calc, normal/absent = normal calc
+        // Check shift mode: normal/absent = skip, publicHoliday = special calc, overtime = normal calc
         const shiftKey = `${dateKey}|${shiftId}`;
         const mode = shiftModes?.[shiftKey];
         
-        // Overtime shifts are excluded from totals
-        if (mode === 'overtime') {
+        // Normal shifts (no mode set) are excluded from totals
+        if (!mode) {
           return;
         }
         
