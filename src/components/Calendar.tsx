@@ -1405,7 +1405,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   <span className="text-base sm:text-lg font-semibold text-green-800 select-none">
-                    {periodStart && periodEnd ? `Period (${formatPeriodDate(periodStart)} - ${formatPeriodDate(periodEnd)})` : 'Month to Date'}
+                    {periodStart && periodEnd ? `Period (${formatPeriodDate(periodStart)} - ${formatPeriodDate(today.toISOString().split('T')[0])})` : 'Month to Date'}
                   </span>
                 </div>
                 <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
@@ -1414,10 +1414,15 @@ export const Calendar: React.FC<CalendarProps> = ({
               </div>
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
-                  ? `Amount earned from ${formatPeriodDate(periodStart)} to ${formatPeriodDate(periodEnd)}`
+                  ? `Amount earned from ${formatPeriodDate(periodStart)} to ${formatPeriodDate(today.toISOString().split('T')[0])}`
                   : `Amount earned from start of month to today (${today.getDate()}/${currentMonth + 1}/${currentYear})`
                 }
               </p>
+              {periodStart && periodEnd && (
+                <p className="text-xs text-green-500 mt-1 text-center select-none">
+                  {periodStart.split('-')[0]} - {today.getFullYear()}
+                </p>
+              )}
             </div>
           )}
 
@@ -1467,17 +1472,6 @@ export const Calendar: React.FC<CalendarProps> = ({
               </div>
             )}
 
-            {/* Clear period button */}
-            {periodStart && periodEnd && (
-              <button
-                onClick={clearPeriod}
-                className="absolute top-2 right-2 p-1 rounded-full hover:bg-indigo-100 transition-colors z-10"
-                title="Clear period"
-              >
-                <X className="w-4 h-4 text-indigo-600" />
-              </button>
-            )}
-
             <div
               onPointerDown={handlePeriodSwipeStart}
               onPointerMove={handlePeriodSwipeMove}
@@ -1509,6 +1503,11 @@ export const Calendar: React.FC<CalendarProps> = ({
                   : `Total amount for all scheduled shifts in ${monthNames[currentMonth]} ${currentYear}`
                 }
               </p>
+              {periodStart && periodEnd && (
+                <p className="text-xs text-indigo-500 mt-1 text-center select-none">
+                  {periodStart.split('-')[0]} - {periodEnd.split('-')[0]}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -2001,7 +2000,14 @@ export const Calendar: React.FC<CalendarProps> = ({
 
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
-                onClick={() => setShowPeriodPicker(false)}
+                onClick={() => {
+                  // If a period is set, clear it; otherwise just close the picker
+                  if (periodStart || periodEnd) {
+                    clearPeriod();
+                  }
+                  setShowPeriodPicker(false);
+                  setPeriodPickerStep('start');
+                }}
                 style={{
                   flex: 1,
                   padding: '12px',
@@ -2014,7 +2020,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                   fontSize: '16px'
                 }}
               >
-                Cancel
+                {periodStart || periodEnd ? 'Clear Period' : 'Cancel'}
               </button>
             </div>
           </div>
