@@ -2029,7 +2029,8 @@ export const Calendar: React.FC<CalendarProps> = ({
                       {Array.from({ length: daysInPickerMonth }, (_, i) => {
                         const day = i + 1;
                         const dateStr = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const isSelected = dateStr === periodStart || dateStr === periodEnd;
+                        const isStart = dateStr === periodStart;
+                        const isEnd = dateStr === periodEnd;
                         const isInRange = periodStart && periodEnd && dateStr >= periodStart && dateStr <= periodEnd;
                         
                         return (
@@ -2038,14 +2039,19 @@ export const Calendar: React.FC<CalendarProps> = ({
                             onClick={() => handlePeriodDateSelect(day)}
                             style={{
                               padding: '10px',
-                              borderRadius: '8px',
+                              borderRadius: (isStart || isEnd) ? '50%' : '8px',
                               border: 'none',
-                              backgroundColor: isSelected ? '#6366f1' : isInRange ? '#e0e7ff' : 'transparent',
-                              color: isSelected ? 'white' : isInRange ? '#4f46e5' : '#1f2937',
-                              fontWeight: isSelected ? 600 : 400,
+                              backgroundColor: isStart ? '#10b981' : isEnd ? '#ef4444' : isInRange ? '#e0e7ff' : 'transparent',
+                              color: (isStart || isEnd) ? 'white' : isInRange ? '#4f46e5' : '#1f2937',
+                              fontWeight: (isStart || isEnd) ? 600 : 400,
                               fontSize: '14px',
                               cursor: 'pointer',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.2s',
+                              width: '36px',
+                              height: '36px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
                             }}
                           >
                             {day}
