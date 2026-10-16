@@ -32,6 +32,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
     overtimeAllowanceHours: 0,
     useManualAmount: false,
     manualAmount: 0,
+    publicHolidayHours: 0,
     applicableDays: {
       monday: false,
       tuesday: false,
@@ -98,6 +99,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
           overtimeAllowanceHours: editingShift.overtimeAllowanceHours || 0,
           useManualAmount: editingShift.useManualAmount || false,
           manualAmount: editingShift.manualAmount || 0,
+          publicHolidayHours: editingShift.publicHolidayHours || 0,
           applicableDays: editingShift.applicableDays || {
             monday: false,
             tuesday: false,
@@ -120,6 +122,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
           overtimeAllowanceHours: 0,
           useManualAmount: false,
           manualAmount: 0,
+          publicHolidayHours: 0,
           applicableDays: {
             monday: false,
             tuesday: false,
@@ -290,6 +293,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         hours: formData.normalHours + formData.overtimeHours + formData.normalAllowanceHours + formData.overtimeAllowanceHours,
         useManualAmount: formData.useManualAmount,
         manualAmount: formData.manualAmount,
+        publicHolidayHours: formData.publicHolidayHours,
         applicableDays: formData.applicableDays
       };
       onSave(updatedShift);
@@ -307,6 +311,7 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
         enabled: true,
         useManualAmount: formData.useManualAmount,
         manualAmount: formData.manualAmount,
+        publicHolidayHours: formData.publicHolidayHours,
         applicableDays: formData.applicableDays
       };
       onSave(newShift);
@@ -581,6 +586,29 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
               </div>
             </div>
 
+            {/* Public Holiday Hours */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-green-800">Public Holiday</span>
+              </div>
+              <p className="text-xs text-green-700 mb-3">Normal working hours used for public holiday pay calculation when this shift is swiped to Public Holiday mode.</p>
+              <div className="relative">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={formData.publicHolidayHours || ''}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    setFormData(prev => ({ ...prev, publicHolidayHours: value }));
+                  }}
+                  className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-center"
+                  placeholder="e.g. 8.00"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
+
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-gray-800">Use Manual Amount</span>
@@ -681,6 +709,9 @@ export const AddShiftModal: React.FC<AddShiftModalProps> = ({
                     )}
                     {formData.overtimeHours > 0 && (
                       <div>Overtime: {formData.overtimeHours}h × {formatCurrency(overtimeRate)}</div>
+                    )}
+                    {formData.publicHolidayHours > 0 && (
+                      <div className="text-green-700">Public Holiday: {formData.publicHolidayHours}h × {formatCurrency(hourlyRate)}</div>
                     )}
                     {formData.normalAllowanceHours > 0 && (
                       <div>Normal Allowance: {formData.normalAllowanceHours}h × {formatCurrency(hourlyRate)}</div>

@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
-import { DaySchedule, Settings, SpecialDates, ExcludedShifts } from '../types';
+import { DaySchedule, Settings, SpecialDates, ShiftModes } from '../types';
 
 export const useScheduleCalculations = (
   schedule: DaySchedule,
   settings: Settings,
   specialDates: SpecialDates,
   currentDate?: Date,
-  refreshKey?: number, // Add refresh key parameter
-  monthlySalary?: number, // Add monthly salary parameter
-  excludedShifts?: ExcludedShifts // Add excluded shifts parameter
+  refreshKey?: number,
+  monthlySalary?: number,
+  shiftModes?: ShiftModes // replaces excludedShifts: 'overtime' | 'publicHoliday' | absent(normal)
 ) => {
   const { totalAmount, monthToDateAmount } = useMemo(() => {
     // Determine effective salary: use monthlySalary if set (> 0),
@@ -69,34 +69,47 @@ export const useScheduleCalculations = (
       
       // Calculate each shift individually for proper amount calculation
       dayShifts.forEach(shiftId => {
-        // Skip excluded shifts (marked as black/not counted)
+        // Check shift mode: overtime = skip, publicHoliday = special calc, normal/absent = normal calc
         const shiftKey = `${dateKey}|${shiftId}`;
-        if (excludedShifts && excludedShifts[shiftKey]) {
-          return; // Skip this shift entirely
+        const mode = shiftModes?.[shiftKey];
+        
+        // Overtime shifts are excluded from totals
+        if (mode === 'overtime') {
+          return;
         }
         
         let shiftAmount = 0;
         
-        // First check custom shifts
-        if (settings.customShifts && settings.customShifts.length > 0) {
-          const customShift = settings.customShifts.find(s => s.id === shiftId);
-          if (customShift && effectiveHourlyRate > 0) {
-            // Use manual amount if enabled, otherwise calculate from hours
-            if (customShift.useManualAmount && customShift.manualAmount !== undefined) {
-              shiftAmount = customShift.manualAmount;
-            } else {
-              shiftAmount = customShift.hours * effectiveHourlyRate;
+        // Public Holiday mode: publicHolidayHours × hourlyRate
+        if (mode === 'publicHoliday') {
+          if (settings.customShifts && settings.customShifts.length > 0) {
+            const customShift = settings.customShifts.find(s => s.id === shiftId);
+            if (customShift && effectiveHourlyRate > 0) {
+              const phHours = customShift.publicHolidayHours || 0;
+              shiftAmount = phHours * effectiveHourlyRate;
             }
           }
         } else {
-          // Fallback to shiftCombinations (legacy)
-          let combination = settings.shiftCombinations?.find(combo => {
-            const comboKey = combo.id.replace(/AM/g, '9-4'); // Handle AM alias
-            return comboKey === shiftId;
-          });
-          
-          if (combination && effectiveHourlyRate) {
-            shiftAmount = combination.hours * effectiveHourlyRate;
+          // Normal mode calculation
+          if (settings.customShifts && settings.customShifts.length > 0) {
+            const customShift = settings.customShifts.find(s => s.id === shiftId);
+            if (customShift && effectiveHourlyRate > 0) {
+              if (customShift.useManualAmount && customShift.manualAmount !== undefined) {
+                shiftAmount = customShift.manualAmount;
+              } else {
+                shiftAmount = customShift.hours * effectiveHourlyRate;
+              }
+            }
+          } else {
+            // Fallback to shiftCombinations (legacy)
+            let combination = settings.shiftCombinations?.find(combo => {
+              const comboKey = combo.id.replace(/AM/g, '9-4');
+              return comboKey === shiftId;
+            });
+            
+            if (combination && effectiveHourlyRate) {
+              shiftAmount = combination.hours * effectiveHourlyRate;
+            }
           }
         }
         

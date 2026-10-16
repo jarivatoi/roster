@@ -66,14 +66,39 @@ export class ScrollingTextAnimator {
     textElement.offsetWidth;
     
     const containerWidth = container.offsetWidth;
-    const textWidth = textElement.scrollWidth;
+    
+    // Measure actual text width using a temporary span for accuracy.
+    // scrollWidth on the text element can under-report when the element's
+    // width is constrained by the parent's `width: 100%`.
+    let textWidth = textElement.scrollWidth;
+    try {
+      const tempSpan = document.createElement('span');
+      tempSpan.style.whiteSpace = 'nowrap';
+      tempSpan.style.display = 'inline-block';
+      tempSpan.style.position = 'absolute';
+      tempSpan.style.visibility = 'hidden';
+      tempSpan.style.fontSize = window.getComputedStyle(textElement).fontSize;
+      tempSpan.style.fontWeight = window.getComputedStyle(textElement).fontWeight;
+      tempSpan.style.fontFamily = window.getComputedStyle(textElement).fontFamily;
+      tempSpan.style.letterSpacing = window.getComputedStyle(textElement).letterSpacing;
+      tempSpan.textContent = textElement.textContent || '';
+      document.body.appendChild(tempSpan);
+      textWidth = tempSpan.scrollWidth;
+      document.body.removeChild(tempSpan);
+    } catch {
+      // Fallback to element scrollWidth
+    }
     
     if (textWidth <= containerWidth) {
       return;
     }
     
-    // Calculate scroll distance with padding
-    const scrollDistance = textWidth - containerWidth; // No padding - exact fit
+    // Calculate scroll distance with padding buffer to ensure full text is visible
+    // The buffer prevents the end of the text from being clipped due to
+    // subpixel rounding or overflow measurement imprecision
+    const overflowWidth = textWidth - containerWidth;
+    const paddingBuffer = Math.max(8, overflowWidth * 0.05);
+    const scrollDistance = overflowWidth + paddingBuffer;
     
     // Create TweenMax timeline for longer text with spaces
     this.timeline = gsap.timeline({ 

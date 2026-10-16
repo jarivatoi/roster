@@ -50,7 +50,28 @@ export const ScrollingText: React.FC<ScrollingTextProps> = ({
       
       // Check if text overflows container
       const containerWidth = container.offsetWidth;
-      const textWidth = textElement.scrollWidth;
+      
+      // Measure actual text width using a temporary span for accuracy.
+      // scrollWidth on the text element can under-report when the element's
+      // width is constrained by the parent's `width: 100%`.
+      let textWidth = textElement.scrollWidth;
+      try {
+        const tempSpan = document.createElement('span');
+        tempSpan.style.whiteSpace = 'nowrap';
+        tempSpan.style.display = 'inline-block';
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.fontSize = window.getComputedStyle(textElement).fontSize;
+        tempSpan.style.fontWeight = window.getComputedStyle(textElement).fontWeight;
+        tempSpan.style.fontFamily = window.getComputedStyle(textElement).fontFamily;
+        tempSpan.style.letterSpacing = window.getComputedStyle(textElement).letterSpacing;
+        tempSpan.textContent = textElement.textContent || '';
+        document.body.appendChild(tempSpan);
+        textWidth = tempSpan.scrollWidth;
+        document.body.removeChild(tempSpan);
+      } catch {
+        // Fallback to element scrollWidth
+      }
       
       const currentText = text || 'children content';
       const hasSpaces = currentText.includes(' ');
@@ -176,8 +197,9 @@ export const ScrollingText: React.FC<ScrollingTextProps> = ({
         style={{
           display: 'inline-block',
           minWidth: '100%',
-          maxWidth: 'none',
-          overflow: 'hidden' // Prevent text from escaping container
+          maxWidth: 'none'
+          // overflow:hidden removed — container already clips;
+          // having it here caused scrollWidth to under-measure
         }
         }
       >

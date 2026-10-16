@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Calculator, Edit3, TrendingUp, Trash2, AlertTriangle, X, Download } from 'lucide-react';
 import { gsap } from 'gsap';
 import { SHIFTS } from '../constants';
-import { DaySchedule, SpecialDates, DateNotes, Settings, ExcludedShifts } from '../types';
+import { DaySchedule, SpecialDates, DateNotes, Settings, ShiftModes } from '../types';
 import { ClearDateModal } from './ClearDateModal';
 import { ClearMonthModal } from './ClearMonthModal';
 import { MonthClearModal } from './MonthClearModal';
@@ -19,7 +19,7 @@ interface CalendarProps {
   specialDates: SpecialDates;
   dateNotes: DateNotes;
   settings?: Settings;
-  excludedShifts?: ExcludedShifts;
+  shiftModes?: ShiftModes;
   onDateClick: (day: number) => void;
   onNavigateMonth: (direction: 'prev' | 'next') => void;
   totalAmount: number;
@@ -42,7 +42,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   specialDates,
   dateNotes,
   settings,
-  excludedShifts,
+  shiftModes,
   onDateClick,
   onNavigateMonth,
   totalAmount,
@@ -73,6 +73,15 @@ export const Calendar: React.FC<CalendarProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [importResults, setImportResults] = useState<{added: number, skipped: number, errors: number} | null>(null);
   const [tempMonthlySalary, setTempMonthlySalary] = useState('');
+  // Period-based calculation state
+  const [periodStart, setPeriodStart] = useState<string | null>(null);
+  const [periodEnd, setPeriodEnd] = useState<string | null>(null);
+  const [showPeriodPicker, setShowPeriodPicker] = useState(false);
+  const [periodPickerStep, setPeriodPickerStep] = useState<'start' | 'end'>('start');
+  const [periodSwipeX, setPeriodSwipeX] = useState(0);
+  const [isPeriodSwiping, setIsPeriodSwiping] = useState(false);
+  const periodSwipeStartX = useRef(0);
+  const periodSwipeCurrentX = useRef(0);
   const calendarGridRef = useRef<HTMLDivElement>(null);
   const animatedElementsRef = useRef<Set<HTMLElement>>(new Set());
   
@@ -105,6 +114,138 @@ export const Calendar: React.FC<CalendarProps> = ({
 
     return () => clearInterval(interval);
   }, []);
+
+  // Calculate period total for custom date range
+  const calculatePeriodTotal = useCallback(() => {
+    if (!periodStart || !periodEnd || !settings) return 0;
+
+    const start = new Date(periodStart);
+    const end = new Date(periodEnd);
+    let total = 0;
+
+    // Determine effective salary and hourly rate
+    const effectiveSalary = monthlySalary > 0 ? monthlySalary : (settings.basicSalary || 0);
+    const globalSalary = settings.basicSalary || 0;
+    const isFutureYear = end.getFullYear() > today.getFullYear();
+    const isPastYear = end.getFullYear() < today.getFullYear();
+    const shouldUseGlobalSalary = monthlySalary === 0 && !isFutureYear && !isPastYear;
+    const salaryForCalc = shouldUseGlobalSalary ? globalSalary : effectiveSalary;
+    const hourlyRate = settings.hourlyRate || 0;
+    const effectiveHourlyRate = salaryForCalc > 0 && hourlyRate > 0
+      ? (salaryForCalc / 30 / 8)
+      : hourlyRate;
+
+    // Iterate through each day in the period
+    const current = new Date(start);
+    while (current <= end) {
+      const dateKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+      const dayShifts = schedule[dateKey] || [];
+
+      dayShifts.forEach(shiftId => {
+        const shiftKey = `${dateKey}|${shiftId}`;
+        const mode = shiftModes?.[shiftKey];
+
+        // Skip overtime shifts
+        if (mode === 'overtime') return;
+
+        let shiftAmount = 0;
+
+        if (mode === 'publicHoliday') {
+          if (settings.customShifts && settings.customShifts.length > 0) {
+            const customShift = settings.customShifts.find(s => s.id === shiftId);
+            if (customShift && effectiveHourlyRate > 0) {
+              const phHours = customShift.publicHolidayHours || 0;
+              shiftAmount = phHours * effectiveHourlyRate;
+            }
+          }
+        } else {
+          if (settings.customShifts && settings.customShifts.length > 0) {
+            const customShift = settings.customShifts.find(s => s.id === shiftId);
+            if (customShift && effectiveHourlyRate > 0) {
+              if (customShift.useManualAmount && customShift.manualAmount !== undefined) {
+                shiftAmount = customShift.manualAmount;
+              } else {
+                shiftAmount = customShift.hours * effectiveHourlyRate;
+              }
+            }
+          } else {
+            let combination = settings.shiftCombinations?.find(combo => {
+              const comboKey = combo.id.replace(/AM/g, '9-4');
+              return comboKey === shiftId;
+            });
+
+            if (combination && effectiveHourlyRate) {
+              shiftAmount = combination.hours * effectiveHourlyRate;
+            }
+          }
+        }
+
+        total += shiftAmount;
+      });
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return total;
+  }, [periodStart, periodEnd, schedule, settings, shiftModes, monthlySalary, today]);
+
+  const periodTotal = calculatePeriodTotal();
+
+  // Swipe handlers for Monthly Total card
+  const handlePeriodSwipeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    periodSwipeStartX.current = e.clientX;
+    periodSwipeCurrentX.current = e.clientX;
+    setIsPeriodSwiping(true);
+  };
+
+  const handlePeriodSwipeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isPeriodSwiping) return;
+    periodSwipeCurrentX.current = e.clientX;
+    const diff = periodSwipeCurrentX.current - periodSwipeStartX.current;
+    // Only allow left swipe (negative diff)
+    setPeriodSwipeX(Math.max(-100, Math.min(0, diff)));
+  };
+
+  const handlePeriodSwipeEnd = () => {
+    if (!isPeriodSwiping) return;
+    setIsPeriodSwiping(false);
+    const diff = periodSwipeCurrentX.current - periodSwipeStartX.current;
+
+    if (diff < -60) {
+      // Swipe left → open period picker
+      setShowPeriodPicker(true);
+      setPeriodPickerStep('start');
+    }
+    setPeriodSwipeX(0);
+  };
+
+  const handlePeriodDateSelect = (day: number) => {
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    if (periodPickerStep === 'start') {
+      setPeriodStart(dateStr);
+      setPeriodPickerStep('end');
+    } else {
+      if (periodStart && dateStr < periodStart) {
+        // If end is before start, swap them
+        setPeriodEnd(periodStart);
+        setPeriodStart(dateStr);
+      } else {
+        setPeriodEnd(dateStr);
+      }
+      setShowPeriodPicker(false);
+    }
+  };
+
+  const clearPeriod = () => {
+    setPeriodStart(null);
+    setPeriodEnd(null);
+  };
+
+  const formatPeriodDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.getDate()} ${monthNames[date.getMonth()].substring(0, 3)}`;
+  };
 
   // Prevent body scroll when date picker modal is open - EXACTLY LIKE OTHER MODALS
   useEffect(() => {
@@ -1183,12 +1324,13 @@ export const Calendar: React.FC<CalendarProps> = ({
                       {dayShifts.map((shiftId, idx) => {
                         const shift = getShiftDisplay(shiftId);
                         const dateKey = formatDateKey(day);
-                        const isExcluded = excludedShifts && excludedShifts[`${dateKey}|${shiftId}`];
+                        const shiftMode = shiftModes?.[`${dateKey}|${shiftId}`];
+                        const textColor = shiftMode === 'publicHoliday' ? 'text-green-600' : shiftMode === 'overtime' ? 'text-black' : 'text-red-600';
                         return shift ? (
                           <div
                             key={`${shiftId}-${idx}`}
                             className={`shift-text text-[8px] sm:text-[11px] font-bold leading-tight flex-shrink-0 w-full select-none overflow-hidden ${
-                              isExcluded ? 'text-black' : 'text-red-600'
+                              textColor
                             } ${isPastDate(day) ? 'opacity-60' : ''}`}
                           >
                             <ScrollingText 
@@ -1244,39 +1386,112 @@ export const Calendar: React.FC<CalendarProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                  <span className="text-base sm:text-lg font-semibold text-green-800 select-none">Month to Date</span>
+                  <span className="text-base sm:text-lg font-semibold text-green-800 select-none">
+                    {periodStart && periodEnd ? `Period (${formatPeriodDate(periodStart)} - ${formatPeriodDate(periodEnd)})` : 'Month to Date'}
+                  </span>
                 </div>
                 <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
-                  {formatCurrency(monthToDateAmount)}
+                  {formatCurrency(periodStart && periodEnd ? periodTotal : monthToDateAmount)}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
-                Amount earned from start of month to today ({today.getDate()}/{currentMonth + 1}/{currentYear})
+                {periodStart && periodEnd
+                  ? `Amount earned from ${formatPeriodDate(periodStart)} to ${formatPeriodDate(periodEnd)}`
+                  : `Amount earned from start of month to today (${today.getDate()}/${currentMonth + 1}/${currentYear})`
+                }
               </p>
             </div>
           )}
 
           {/* Monthly Total */}
           <div 
-            className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 sm:p-4"
+            className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 sm:p-4 relative overflow-hidden"
             style={{
               // FIXED: Ensure proper touch scrolling
               WebkitOverflowScrolling: 'touch',
               touchAction: 'pan-y'
             }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-                <span className="text-base sm:text-lg font-semibold text-indigo-800 select-none">Monthly Total</span>
+            {/* Swipe hint overlay */}
+            {!periodStart && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '100px',
+                  backgroundColor: '#6366f1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1,
+                  opacity: Math.min(1, Math.abs(periodSwipeX) / 60),
+                  transition: isPeriodSwiping ? 'none' : 'opacity 0.2s'
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: 'white',
+                    borderRadius: '20px',
+                    padding: '6px 14px',
+                    color: '#6366f1',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    border: 'none'
+                  }}
+                >
+                  Period
+                </div>
               </div>
-              <span className="text-lg sm:text-2xl font-bold text-indigo-900 select-none">
-                {formatCurrency(totalAmount)}
-              </span>
+            )}
+
+            {/* Clear period button */}
+            {periodStart && periodEnd && (
+              <button
+                onClick={clearPeriod}
+                className="absolute top-2 right-2 p-1 rounded-full hover:bg-indigo-100 transition-colors z-10"
+                title="Clear period"
+              >
+                <X className="w-4 h-4 text-indigo-600" />
+              </button>
+            )}
+
+            <div
+              onPointerDown={handlePeriodSwipeStart}
+              onPointerMove={handlePeriodSwipeMove}
+              onPointerUp={handlePeriodSwipeEnd}
+              style={{
+                transform: `translateX(${periodSwipeX}px)`,
+                transition: isPeriodSwiping ? 'none' : 'transform 0.2s',
+                position: 'relative',
+                zIndex: 2
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                  <span className="text-base sm:text-lg font-semibold text-indigo-800 select-none">
+                    {periodStart && periodEnd
+                      ? `${formatPeriodDate(periodStart)} - ${formatPeriodDate(periodEnd)} (Total)`
+                      : 'Monthly Total'
+                    }
+                  </span>
+                </div>
+                <span className="text-lg sm:text-2xl font-bold text-indigo-900 select-none">
+                  {formatCurrency(periodStart && periodEnd ? periodTotal : totalAmount)}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-indigo-600 mt-2 text-center select-none">
+                {periodStart && periodEnd
+                  ? `Total amount for period ${formatPeriodDate(periodStart)} to ${formatPeriodDate(periodEnd)}`
+                  : `Total amount for all scheduled shifts in ${monthNames[currentMonth]} ${currentYear}`
+                }
+              </p>
             </div>
-            <p className="text-xs sm:text-sm text-indigo-600 mt-2 text-center select-none">
-              Total amount for all scheduled shifts in {monthNames[currentMonth]} {currentYear}
-            </p>
           </div>
         </div>
       </div>
@@ -1629,6 +1844,134 @@ export const Calendar: React.FC<CalendarProps> = ({
                   Close
                 </button>
               )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Period Picker Modal */}
+      {showPeriodPicker && createPortal(
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            overflow: 'auto',
+            WebkitOverflowScrolling: 'touch'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowPeriodPicker(false);
+            }
+          }}
+        >
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              maxWidth: '400px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1f2937', margin: 0 }}>
+                {periodPickerStep === 'start' ? 'Select Start Date' : 'Select End Date'}
+              </h3>
+              <button
+                onClick={() => setShowPeriodPicker(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X style={{ width: '24px', height: '24px', color: '#6b7280' }} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px', textAlign: 'center' }}>
+              {periodPickerStep === 'start'
+                ? 'Choose the starting date for your period'
+                : 'Choose the ending date for your period'
+              }
+            </p>
+
+            {/* Calendar grid for date selection */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
+                {weekDays.map(day => (
+                  <div key={day} style={{ textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#6b7280', padding: '8px 0' }}>
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                {Array.from({ length: firstDayWeekday }, (_, i) => (
+                  <div key={`empty-${i}`} />
+                ))}
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                  const day = i + 1;
+                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const isSelected = dateStr === periodStart || dateStr === periodEnd;
+                  const isInRange = periodStart && periodEnd && dateStr >= periodStart && dateStr <= periodEnd;
+                  
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => handlePeriodDateSelect(day)}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: isSelected ? '#6366f1' : isInRange ? '#e0e7ff' : 'transparent',
+                        color: isSelected ? 'white' : isInRange ? '#4f46e5' : '#1f2937',
+                        fontWeight: isSelected ? 600 : 400,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setShowPeriodPicker(false)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#f3f4f6',
+                  color: '#4b5563',
+                  fontWeight: 600,
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '16px'
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>,

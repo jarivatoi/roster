@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Check } from 'lucide-react';
 import { SHIFTS } from '../constants';
-import { DaySchedule, SpecialDates, DateNotes, Settings, CustomShift, ExcludedShifts } from '../types';
+import { DaySchedule, SpecialDates, DateNotes, Settings, CustomShift, ShiftModes } from '../types';
 import { ScrollingText } from './ScrollingText';
-import { SwipeableShiftButton } from './SwipeableShiftButton';
+import { SwipeableShiftButton, ShiftMode } from './SwipeableShiftButton';
 
 interface ShiftModalProps {
   selectedDate: string | null;
@@ -11,10 +11,10 @@ interface ShiftModalProps {
   specialDates: SpecialDates;
   dateNotes: DateNotes;
   settings?: Settings;
-  excludedShifts?: ExcludedShifts;
+  shiftModes?: ShiftModes;
   onToggleShift: (shiftId: string) => void;
   onToggleSpecialDate: (dateKey: string, isSpecial: boolean) => void;
-  onToggleExcluded: (dateKey: string, shiftId: string) => void;
+  onSetShiftMode: (dateKey: string, shiftId: string, mode: ShiftMode) => void;
   onUpdateNote: (dateKey: string, note: string) => void;
   onClose: () => void;
 }
@@ -25,10 +25,10 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   specialDates,
   dateNotes,
   settings,
-  excludedShifts,
+  shiftModes,
   onToggleShift,
   onToggleSpecialDate,
-  onToggleExcluded,
+  onSetShiftMode,
   onUpdateNote,
   onClose
 }) => {
@@ -289,6 +289,8 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
       time: string;
       hours: number;
       color: string;
+      overtimeHours: number;
+      publicHolidayHours: number;
     }> = [];
     const selectedDateObj = new Date(selectedDate);
     const dayOfWeek = selectedDateObj.getDay();
@@ -307,7 +309,9 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               label: shift.label,
               time: `${shift.fromTime} to ${shift.toTime}`,
               hours: shift.hours,
-              color: 'bg-blue-100 text-blue-800 border-blue-200'
+              color: 'bg-blue-100 text-blue-800 border-blue-200',
+              overtimeHours: shift.overtimeHours || 0,
+              publicHolidayHours: shift.publicHolidayHours || 0
             });
           } else {
             // Otherwise, check applicable days
@@ -324,7 +328,9 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                 label: shift.label,
                 time: `${shift.fromTime} to ${shift.toTime}`,
                 hours: shift.hours,
-                color: 'bg-blue-100 text-blue-800 border-blue-200'
+                color: 'bg-blue-100 text-blue-800 border-blue-200',
+                overtimeHours: shift.overtimeHours || 0,
+                publicHolidayHours: shift.publicHolidayHours || 0
               });
             }
           }
@@ -522,21 +528,28 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
               const isDisabled = !isSelected && (!canSelect || maxReached);
               const showMaxSelection = maxReached && !canSelect;
               const showOverlap = !canSelect && !maxReached && !isSelected; // Only show if NOT already selected
-              const isExcluded = excludedShifts && excludedShifts[`${selectedDate}|${shift.id}`];
+              const shiftModeKey = `${selectedDate}|${shift.id}`;
+              const currentMode: ShiftMode = shiftModes?.[shiftModeKey] || 'normal';
+              const hasOvertime = (shift.overtimeHours || 0) > 0;
+              const hasPublicHoliday = (shift.publicHolidayHours || 0) > 0;
 
               return (
                 <SwipeableShiftButton
                   key={shift.id}
                   isSelected={isSelected}
-                  isExcluded={isExcluded || false}
+                  mode={currentMode}
+                  hasOvertime={hasOvertime}
+                  hasPublicHoliday={hasPublicHoliday}
                   onClick={() => handleShiftToggle(shift.id)}
-                  onToggleExclude={() => selectedDate && onToggleExcluded(selectedDate, shift.id)}
+                  onSetMode={(newMode) => selectedDate && onSetShiftMode(selectedDate, shift.id, newMode)}
                   disabled={isDisabled}
                   className={`w-full p-4 rounded-lg border-2 text-center transition-all duration-200 select-none ${
                     isSelected
-                      ? isExcluded
-                        ? 'bg-white border-gray-400 shadow-md transform scale-[1.02]'
-                        : `${shift.color} border-current shadow-md transform scale-[1.02]`
+                      ? currentMode === 'publicHoliday'
+                        ? 'bg-green-50 border-green-400 shadow-md transform scale-[1.02]'
+                        : currentMode === 'overtime'
+                          ? 'bg-white border-gray-400 shadow-md transform scale-[1.02]'
+                          : `${shift.color} border-current shadow-md transform scale-[1.02]`
                       : isDisabled
                         ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-50'
                         : 'bg-white border-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100'
@@ -550,7 +563,11 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                   <div className="flex justify-between items-center">
                     <div className="text-left flex-1">
                       <div className={`font-semibold select-none ${
-                        isSelected && isExcluded ? 'text-black' : 'text-red-600'
+                        isSelected && currentMode === 'publicHoliday'
+                          ? 'text-green-600'
+                          : isSelected && currentMode === 'overtime'
+                            ? 'text-black'
+                            : 'text-red-600'
                       }`}>{shift.label}</div>
                       <div className="text-sm opacity-75 select-none">{shift.time}</div>
                       {showMaxSelection && (
@@ -563,9 +580,14 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                           Cannot be added in shift combination
                         </div>
                       )}
-                      {isSelected && isExcluded && (
+                      {isSelected && currentMode === 'overtime' && (
                         <div className="text-xs mt-1 text-gray-600 font-semibold select-none italic">
                           Normal Shift
+                        </div>
+                      )}
+                      {isSelected && currentMode === 'publicHoliday' && (
+                        <div className="text-xs mt-1 text-green-600 font-semibold select-none italic">
+                          Public Holiday ({shift.publicHolidayHours}h)
                         </div>
                       )}
                     </div>
@@ -573,11 +595,11 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                       <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.25))' }}>
                         <defs>
                           <linearGradient id={`tick-grad-${shift.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor={isExcluded ? '#555' : '#4ade80'} />
-                            <stop offset="100%" stopColor={isExcluded ? '#222' : '#16a34a'} />
+                            <stop offset="0%" stopColor={currentMode === 'overtime' ? '#555' : currentMode === 'publicHoliday' ? '#4ade80' : '#4ade80'} />
+                            <stop offset="100%" stopColor={currentMode === 'overtime' ? '#222' : currentMode === 'publicHoliday' ? '#16a34a' : '#16a34a'} />
                           </linearGradient>
                         </defs>
-                        <circle cx="14" cy="14" r="13" fill={`url(#tick-grad-${shift.id})`} stroke={isExcluded ? '#333' : '#15803d'} strokeWidth="1" />
+                        <circle cx="14" cy="14" r="13" fill={`url(#tick-grad-${shift.id})`} stroke={currentMode === 'overtime' ? '#333' : '#15803d'} strokeWidth="1" />
                         <circle cx="14" cy="11" r="10" fill="rgba(255,255,255,0.15)" />
                         <path d="M8 14.5 L12 18.5 L20 10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>

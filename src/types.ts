@@ -11,7 +11,11 @@ export interface DaySchedule {
 }
 
 export interface ExcludedShifts {
-  [key: string]: boolean; // "date|shiftId" -> is excluded
+  [key: string]: boolean; // "date|shiftId" -> is excluded (legacy, kept for migration)
+}
+
+export interface ShiftModes {
+  [key: string]: 'overtime' | 'publicHoliday'; // "date|shiftId" -> mode (absent = normal)
 }
 
 export interface SpecialDates {
@@ -74,6 +78,7 @@ export interface CustomShift {
   enabled: boolean;
   useManualAmount?: boolean;
   manualAmount?: number;
+  publicHolidayHours?: number;
   applicableDays?: {
     monday: boolean;
     tuesday: boolean;
