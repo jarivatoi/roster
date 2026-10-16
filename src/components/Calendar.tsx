@@ -81,8 +81,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   // Store period as day offsets (e.g., {startDay: 16, endDay: 15} means 16th of last month to 15th of this month)
   const periodDayOffsets = periodSelection?.dayOffsets || null;
   
-  // Calculate actual period dates based on current month
-  const calculatePeriodDates = () => {
+  const periodDates = useMemo(() => {
     if (!periodDayOffsets || !periodDayOffsets.startDay) return { start: null, end: null };
     
     try {
@@ -122,9 +121,8 @@ export const Calendar: React.FC<CalendarProps> = ({
       console.error('Error calculating period dates:', error);
       return { start: null, end: null };
     }
-  };
+  }, [periodDayOffsets, currentMonth, currentYear]);
   
-  const periodDates = calculatePeriodDates();
   const periodStart = periodDates.start;
   const periodEnd = periodDates.end;
   const [showPeriodPicker, setShowPeriodPicker] = useState(false);
