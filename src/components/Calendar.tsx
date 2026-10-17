@@ -1677,6 +1677,8 @@ export const Calendar: React.FC<CalendarProps> = ({
         isOpen={showClearSelectionModal}
         periodStart={periodStart}
         periodEnd={periodEnd}
+        currentMonth={currentMonth}
+        currentYear={currentYear}
         onClearMonth={() => {
           setShowClearSelectionModal(false);
           setShowMonthClearModal(true);

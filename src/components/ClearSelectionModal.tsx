@@ -9,6 +9,8 @@ interface ClearSelectionModalProps {
   onCancel: () => void;
   periodStart: string | null;
   periodEnd: string | null;
+  currentMonth: number;
+  currentYear: number;
 }
 
 export const ClearSelectionModal: React.FC<ClearSelectionModalProps> = ({
@@ -18,13 +20,41 @@ export const ClearSelectionModal: React.FC<ClearSelectionModalProps> = ({
   onCancel,
   periodStart,
   periodEnd,
+  currentMonth,
+  currentYear,
 }) => {
   if (!isOpen) return null;
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   const formatPeriodDate = (dateString: string) => {
     const d = new Date(dateString);
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return `${d.getDate()} ${monthNames[d.getMonth()]}`;
+  };
+
+  const formatPeriodRange = (start: string, end: string) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    const startDay = startDate.getDate();
+    const startMonth = monthNames[startDate.getMonth()];
+    const endDay = endDate.getDate();
+    const endMonth = monthNames[endDate.getMonth()];
+    
+    if (startYear === endYear) {
+      // Same year: "14 Oct - 25 Oct 2026"
+      return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${startYear}`;
+    } else {
+      // Different years: "15 Dec 2025 - 13 Jan 2026"
+      return `${startDay} ${startMonth} ${startYear} - ${endDay} ${endMonth} ${endYear}`;
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -99,7 +129,7 @@ export const ClearSelectionModal: React.FC<ClearSelectionModalProps> = ({
                 <div className="flex-1">
                   <h4 className="font-semibold text-orange-900 mb-1">Current Month</h4>
                   <p className="text-xs text-orange-700">
-                    Clear all data for the current month
+                    {monthNames[currentMonth]} {currentYear}
                   </p>
                 </div>
               </div>
@@ -118,7 +148,7 @@ export const ClearSelectionModal: React.FC<ClearSelectionModalProps> = ({
                   <div className="flex-1">
                     <h4 className="font-semibold text-green-900 mb-1">Period</h4>
                     <p className="text-xs text-green-700">
-                      {formatPeriodDate(periodStart)} - {formatPeriodDate(periodEnd)}
+                      {periodStart && periodEnd ? formatPeriodRange(periodStart, periodEnd) : ''}
                     </p>
                   </div>
                 </div>
