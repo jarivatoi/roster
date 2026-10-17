@@ -7,6 +7,7 @@ import { DaySchedule, SpecialDates, DateNotes, Settings, ShiftModes } from '../t
 import { ClearDateModal } from './ClearDateModal';
 import { ClearMonthModal } from './ClearMonthModal';
 import { MonthClearModal } from './MonthClearModal';
+import { ClearSelectionModal } from './ClearSelectionModal';
 import { ScrollingText } from './ScrollingText';
 // Calendar export modal removed
 import { formatMauritianRupees } from '../utils/currency';
@@ -67,6 +68,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   const [showClearDateModal, setShowClearDateModal] = useState(false);
   const [showClearMonthModal, setShowClearMonthModal] = useState(false);
   const [showMonthClearModal, setShowMonthClearModal] = useState(false);
+  const [showClearSelectionModal, setShowClearSelectionModal] = useState(false);
   // Removed: external calendar export modal state
   const [dateToDelete, setDateToDelete] = useState<string | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -687,7 +689,7 @@ export const Calendar: React.FC<CalendarProps> = ({
       setIsLongPressActive(true);
       // Only show modal if month has data to clear
       if (hasMonthData()) {
-        setShowMonthClearModal(true);
+        setShowClearSelectionModal(true);
       }
       // Reset flag after a delay
       setTimeout(() => setIsLongPressActive(false), 500);
@@ -849,6 +851,63 @@ export const Calendar: React.FC<CalendarProps> = ({
         setDateNotes(prev => {
           const newDateNotes = { ...prev };
           monthDateKeys.forEach(dateKey => {
+            delete newDateNotes[dateKey];
+          });
+          return newDateNotes;
+        });
+        
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  // Clear period function
+  const handleClearPeriod = async (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      try {
+        if (!periodStart || !periodEnd) {
+          resolve();
+          return;
+        }
+
+        // Generate all date keys in the period range
+        const startDate = new Date(periodStart);
+        const endDate = new Date(periodEnd);
+        const periodDateKeys: string[] = [];
+        
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+          const year = currentDate.getFullYear();
+          const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+          const day = currentDate.getDate().toString().padStart(2, '0');
+          periodDateKeys.push(`${year}-${month}-${day}`);
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        // Clear schedule data for the period
+        setSchedule(prev => {
+          const newSchedule = { ...prev };
+          periodDateKeys.forEach(dateKey => {
+            delete newSchedule[dateKey];
+          });
+          return newSchedule;
+        });
+        
+        // Clear special dates for the period
+        setSpecialDates(prev => {
+          const newSpecialDates = { ...prev };
+          periodDateKeys.forEach(dateKey => {
+            delete newSpecialDates[dateKey];
+          });
+          return newSpecialDates;
+        });
+        
+        // Clear date notes for the period
+        setDateNotes(prev => {
+          const newDateNotes = { ...prev };
+          periodDateKeys.forEach(dateKey => {
             delete newDateNotes[dateKey];
           });
           return newDateNotes;
@@ -1611,6 +1670,22 @@ export const Calendar: React.FC<CalendarProps> = ({
         monthData={getMonthStatistics()}
         onConfirm={handleClearMonth}
         onCancel={() => setShowMonthClearModal(false)}
+      />
+
+      {/* Clear Selection Modal - Choose between clearing month or period */}
+      <ClearSelectionModal
+        isOpen={showClearSelectionModal}
+        periodStart={periodStart}
+        periodEnd={periodEnd}
+        onClearMonth={() => {
+          setShowClearSelectionModal(false);
+          setShowMonthClearModal(true);
+        }}
+        onClearPeriod={() => {
+          setShowClearSelectionModal(false);
+          handleClearPeriod();
+        }}
+        onCancel={() => setShowClearSelectionModal(false)}
       />
 
   {/* Calendar export modal removed */}
