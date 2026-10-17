@@ -295,6 +295,12 @@ export const Calendar: React.FC<CalendarProps> = ({
       const startDay = periodSelection?.dayOffsets?.startDay;
       // Compare full date strings to correctly handle cross-month selections
       const selectedDateStr = periodSelection?.start;
+      
+      // Prevent selecting the same date for both start and end
+      if (selectedDateStr && dateStr === selectedDateStr) {
+        return;
+      }
+      
       if (selectedDateStr && dateStr < selectedDateStr) {
         // If selected end date is before start date, swap them
         onPeriodChange?.({ dayOffsets: { startDay: day, endDay: startDay ?? null }, start: dateStr, end: periodStart });
