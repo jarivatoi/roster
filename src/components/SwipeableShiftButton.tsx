@@ -34,6 +34,8 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   const startX = useRef(0);
   const currentX = useRef(0);
   const isMouseDragging = useRef(false);
+  /** Tracks whether a swipe exceeded the threshold - gates both mode change and click */
+  const swipeExceededThreshold = useRef(false);
   const SWIPE_THRESHOLD = 60;
   const MAX_SWIPE = 100;
 
@@ -52,6 +54,9 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   // ---- Touch handlers (mobile) ----
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!isSelected) return;
+    // Ignore touch events if a mouse/pointer drag is already in progress (touch-enabled laptops)
+    if (isMouseDragging.current) return;
+    swipeExceededThreshold.current = false;
     const touch = e.touches[0];
     startX.current = touch.clientX;
     currentX.current = touch.clientX;
@@ -60,6 +65,8 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !isSelected) return;
+    // Ignore touch events if a mouse/pointer drag is already in progress
+    if (isMouseDragging.current) return;
     const touch = e.touches[0];
     currentX.current = touch.clientX;
     const diff = currentX.current - startX.current;
@@ -68,10 +75,13 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
 
   const handleTouchEnd = () => {
     if (!isDragging || !isSelected) return;
+    // Ignore touch events if a mouse/pointer drag is already in progress
+    if (isMouseDragging.current) return;
     setIsDragging(false);
     const diff = currentX.current - startX.current;
 
     if (diff < -SWIPE_THRESHOLD && canSwipeLeft) {
+      swipeExceededThreshold.current = true;
       // Swipe left: toggle between normal and overtime
       // If in PH mode, go to normal first (not directly to overtime)
       if (mode === 'publicHoliday') {
@@ -80,6 +90,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
         onSetMode(mode === 'normal' ? 'overtime' : 'normal');
       }
     } else if (diff > SWIPE_THRESHOLD && canSwipeRight) {
+      swipeExceededThreshold.current = true;
       // Swipe right: toggle between normal and publicHoliday
       // If in overtime mode, go to normal first (not directly to PH)
       if (mode === 'overtime') {
@@ -95,6 +106,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (!isSelected) return;
     if (e.pointerType === 'touch') return;
+    swipeExceededThreshold.current = false;
     e.preventDefault();
     (e.target as HTMLButtonElement).setPointerCapture(e.pointerId);
     isMouseDragging.current = true;
@@ -119,6 +131,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
 
     const diff = currentX.current - startX.current;
     if (diff < -SWIPE_THRESHOLD && canSwipeLeft) {
+      swipeExceededThreshold.current = true;
       // Swipe left: toggle between normal and overtime
       // If in PH mode, go to normal first (not directly to overtime)
       if (mode === 'publicHoliday') {
@@ -127,6 +140,7 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
         onSetMode(mode === 'normal' ? 'overtime' : 'normal');
       }
     } else if (diff > SWIPE_THRESHOLD && canSwipeRight) {
+      swipeExceededThreshold.current = true;
       // Swipe right: toggle between normal and publicHoliday
       // If in overtime mode, go to normal first (not directly to PH)
       if (mode === 'overtime') {
@@ -139,9 +153,9 @@ export const SwipeableShiftButton: React.FC<SwipeableShiftButtonProps> = ({
   };
 
   const handleClick = () => {
-    if (Math.abs(translateX) < 10) {
-      onClick();
-    }
+    // If the swipe exceeded the threshold, we already committed a mode change - don't toggle selection
+    if (swipeExceededThreshold.current) return;
+    onClick();
   };
 
   // Overlay labels show the mode the button will switch TO
