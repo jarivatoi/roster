@@ -8,6 +8,7 @@ import { ClearDateModal } from './ClearDateModal';
 import { ClearMonthModal } from './ClearMonthModal';
 import { MonthClearModal } from './MonthClearModal';
 import { ClearSelectionModal } from './ClearSelectionModal';
+import { PeriodClearModal } from './PeriodClearModal';
 import { ScrollingText } from './ScrollingText';
 // Calendar export modal removed
 import { formatMauritianRupees } from '../utils/currency';
@@ -69,6 +70,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   const [showClearMonthModal, setShowClearMonthModal] = useState(false);
   const [showMonthClearModal, setShowMonthClearModal] = useState(false);
   const [showClearSelectionModal, setShowClearSelectionModal] = useState(false);
+  const [showPeriodClearModal, setShowPeriodClearModal] = useState(false);
   // Removed: external calendar export modal state
   const [dateToDelete, setDateToDelete] = useState<string | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -1722,9 +1724,18 @@ export const Calendar: React.FC<CalendarProps> = ({
         }}
         onClearPeriod={() => {
           setShowClearSelectionModal(false);
-          handleClearPeriod();
+          setShowPeriodClearModal(true);
         }}
         onCancel={() => setShowClearSelectionModal(false)}
+      />
+
+      {/* Period Clear Modal */}
+      <PeriodClearModal
+        isOpen={showPeriodClearModal}
+        periodStart={periodStart || ''}
+        periodEnd={periodEnd || ''}
+        onConfirm={handleClearPeriod}
+        onCancel={() => setShowPeriodClearModal(false)}
       />
 
   {/* Calendar export modal removed */}
