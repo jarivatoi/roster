@@ -11,6 +11,7 @@ interface ClearSelectionModalProps {
   periodEnd: string | null;
   currentMonth: number;
   currentYear: number;
+  hasPeriodData: boolean;
 }
 
 export const ClearSelectionModal: React.FC<ClearSelectionModalProps> = ({
@@ -22,6 +23,7 @@ export const ClearSelectionModal: React.FC<ClearSelectionModalProps> = ({
   periodEnd,
   currentMonth,
   currentYear,
+  hasPeriodData,
 }) => {
   if (!isOpen) return null;
 
@@ -136,7 +138,7 @@ export const ClearSelectionModal: React.FC<ClearSelectionModalProps> = ({
             </button>
 
             {/* Period Option */}
-            {periodStart && periodEnd && (
+            {periodStart && periodEnd && hasPeriodData && (
               <button
                 onClick={onClearPeriod}
                 className="w-full p-4 bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-300 rounded-xl transition-all duration-200 text-left group"

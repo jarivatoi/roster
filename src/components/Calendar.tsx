@@ -863,6 +863,36 @@ export const Calendar: React.FC<CalendarProps> = ({
     });
   };
 
+  // Check if period has any data
+  const hasPeriodData = (): boolean => {
+    if (!periodStart || !periodEnd) return false;
+
+    // Generate all date keys in the period range
+    const startDate = new Date(periodStart);
+    const endDate = new Date(periodEnd);
+    
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const year = currentDate.getFullYear();
+      const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = currentDate.getDate().toString().padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
+      
+      // Check if this date has any data
+      const hasShifts = schedule[dateKey] && schedule[dateKey].length > 0;
+      const hasSpecialDate = specialDates[dateKey] !== undefined;
+      const hasNote = dateNotes[dateKey] !== undefined;
+      
+      if (hasShifts || hasSpecialDate || hasNote) {
+        return true;
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return false;
+  };
+
   // Clear period function
   const handleClearPeriod = async (): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -1679,6 +1709,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         periodEnd={periodEnd}
         currentMonth={currentMonth}
         currentYear={currentYear}
+        hasPeriodData={hasPeriodData()}
         onClearMonth={() => {
           setShowClearSelectionModal(false);
           setShowMonthClearModal(true);
