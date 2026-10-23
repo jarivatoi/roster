@@ -288,41 +288,76 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
-    // When a period is active, shift it by its own length instead of moving by calendar month
+    const newMonth = currentMonth + (direction === 'next' ? 1 : -1);
+    const newDate = new Date(currentYear, newMonth, 1);
+    const newViewMonthStart = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+    const newViewMonthEnd = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+
+    if (periodSelection?.start && periodSelection?.end) {
+      const pStart = new Date(periodSelection.start);
+      const pEnd = new Date(periodSelection.end);
+
+      // Check if the new viewed month overlaps with the current period
+      const overlaps = newViewMonthStart <= pEnd && newViewMonthEnd >= pStart;
+
+      if (!overlaps) {
+        // New month is past the period end → shift forward
+        // New month is before the period start → shift backward
+        const durationDays = Math.round((pEnd.getTime() - pStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const delta = direction === 'next' ? durationDays : -durationDays;
+
+        const newStart = new Date(pStart);
+        newStart.setDate(newStart.getDate() + delta);
+        const newEnd = new Date(newStart);
+        newEnd.setDate(newEnd.getDate() + durationDays - 1);
+
+        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        setPeriodSelection({
+          dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
+          start: fmt(newStart),
+          end: fmt(newEnd)
+        });
+
+        // Navigate to the shifted period's start month
+        setCurrentDate(new Date(newStart.getFullYear(), newStart.getMonth(), 1));
+        return;
+      }
+    }
+
+    // Month overlaps with period (or no period) — just change the viewed month
+    setCurrentDate(newDate);
+  };
+
+  const handleDateClick = (dateKey: string) => {
+    setSelectedDate(dateKey);
+    setShowModal(true);
+  };
+
+  // Navigate to the period containing today (or today's month if no period is active)
+  const handleGoToToday = () => {
+    const today = new Date();
     if (periodSelection?.start && periodSelection?.end) {
       const start = new Date(periodSelection.start);
       const end = new Date(periodSelection.end);
       const durationDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      const delta = direction === 'next' ? durationDays : -durationDays;
-
+      const diffDays = Math.round((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const periodIndex = Math.floor(diffDays / durationDays);
       const newStart = new Date(start);
-      newStart.setDate(newStart.getDate() + delta);
-      const newEnd = new Date(end);
-      newEnd.setDate(newEnd.getDate() + delta);
-
-      const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
+      newStart.setDate(newStart.getDate() + periodIndex * durationDays);
+      const newEnd = new Date(newStart);
+      newEnd.setDate(newEnd.getDate() + durationDays - 1);
+      const formatDate = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       setPeriodSelection({
         dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
-        start: fmt(newStart),
-        end: fmt(newEnd)
+        start: formatDate(newStart),
+        end: formatDate(newEnd)
       });
-
-      // Also advance the viewed month to the new end date's month so the calendar follows
-      setCurrentDate(new Date(newEnd.getFullYear(), newEnd.getMonth(), 1));
-      return;
+      setCurrentDate(new Date(newStart.getFullYear(), newStart.getMonth(), 1));
+    } else {
+      setCurrentDate(today);
     }
-    setCurrentDate(new Date(currentYear, currentMonth + (direction === 'next' ? 1 : -1), 1));
-  };
-
-  const formatDateKey = (day: number) => {
-    return `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-  };
-
-  const handleDateClick = (day: number) => {
-    const dateKey = formatDateKey(day);
-    setSelectedDate(dateKey);
-    setShowModal(true);
   };
 
   const checkTimeOverlap = (shift1Id: string, shift2Id: string): boolean => {
@@ -432,6 +467,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
             totalAmount={totalAmount}
             monthToDateAmount={monthToDateAmount}
             onDateChange={setCurrentDate}
+            onGoToToday={handleGoToToday}
             scheduleTitle={currentScheduleTitle}
             onTitleUpdate={setScheduleTitle}
             setSchedule={setSchedule}
@@ -571,6 +607,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
             totalAmount={totalAmount}
             monthToDateAmount={monthToDateAmount}
             onDateChange={setCurrentDate}
+            onGoToToday={handleGoToToday}
             scheduleTitle={scheduleTitle}
             onTitleUpdate={setScheduleTitle}
             setSchedule={setSchedule}

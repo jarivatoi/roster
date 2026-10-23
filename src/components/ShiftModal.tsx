@@ -158,17 +158,13 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
   // Function to scroll back to the edited date when modal closes
   const handleCloseWithFocus = useCallback(() => {
     if (selectedDate) {
-      // Parse the date to get the day number
-      const dateObj = new Date(selectedDate);
-      const dayNumber = dateObj.getDate();
-      
       // Close the modal first
       onClose();
       
       // Use setTimeout to ensure modal is closed before scrolling
       setTimeout(() => {
-        // Find the date element using the data-day attribute
-        const dateElement = document.querySelector(`[data-day="${dayNumber}"]`) as HTMLElement;
+        // Find the date element using the data-date-key attribute (handles cross-month period days)
+        const dateElement = document.querySelector(`[data-date-key="${selectedDate}"]`) as HTMLElement;
         
         if (dateElement) {
           // Scroll the element into view with smooth behavior
