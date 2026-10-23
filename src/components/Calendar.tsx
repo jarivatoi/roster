@@ -984,6 +984,18 @@ export const Calendar: React.FC<CalendarProps> = ({
   // Check if current month/year matches today's month/year for month-to-date display
   const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
 
+  // Check if today falls within the selected period range
+  const isTodayInPeriod = periodStart && periodEnd
+    ? today >= new Date(periodStart) && today <= new Date(periodEnd)
+    : false;
+
+  // Check if a given day number in the current viewed month falls within the period
+  const isDayInPeriod = (day: number): boolean => {
+    if (!periodStart || !periodEnd) return true; // no period = all days visible
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return dateStr >= periodStart && dateStr <= periodEnd;
+  };
+
   // Generate calendar days
   const calendarDays = [];
   
@@ -1097,7 +1109,12 @@ export const Calendar: React.FC<CalendarProps> = ({
                 WebkitTapHighlightColor: 'transparent'
               }}
             >
-              <span className="select-none">{monthNames[currentMonth]} {currentYear}</span>
+              <span className="select-none">
+                {periodStart && periodEnd
+                  ? formatPeriodRange(periodStart, periodEnd)
+                  : `${monthNames[currentMonth]} ${currentYear}`
+                }
+              </span>
             </button>
           </div>
           
@@ -1432,13 +1449,14 @@ export const Calendar: React.FC<CalendarProps> = ({
             const hasSpecialDate = day ? isSpecialDate(day) : false;
             const todayDate = day ? isToday(day) : false;
             const pastDate = day ? isPastDate(day) : false;
+            const dayInPeriod = day ? isDayInPeriod(day) : false;
 
             return (
               <div
                 key={index}
                 data-day={day}
                 className={`day-box p-1 sm:p-2 rounded-lg border-2 transition-colors duration-200 overflow-hidden relative select-none ${
-                  day 
+                  day && dayInPeriod
                     ? todayDate
                       ? `cursor-pointer border-indigo-400 shadow-lg bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-200` // TODAY: Permanent hover state
                       : `cursor-pointer hover:border-indigo-400 hover:shadow-lg bg-yellow-50 border-yellow-200 hover:bg-yellow-100 active:bg-yellow-200`
@@ -1449,13 +1467,15 @@ export const Calendar: React.FC<CalendarProps> = ({
                   WebkitUserSelect: 'none',
                   display: 'flex',
                   flexDirection: 'column',
-                  minHeight: `${cellSize}px` // Square size (width = height) but can grow with content
+                  minHeight: `${cellSize}px`, // Square size (width = height) but can grow with content
+                  // Hide cells that are out of the selected period
+                  visibility: (day && !dayInPeriod) ? 'hidden' : 'visible'
                 }}
-                onClick={() => day && handleDateClick(day)}
-               onMouseDown={(e) => day && handleDateLongPressStart(day, e)}
+                onClick={() => day && dayInPeriod && handleDateClick(day)}
+               onMouseDown={(e) => day && dayInPeriod && handleDateLongPressStart(day, e)}
                onMouseUp={handleDateLongPressEnd}
                onMouseLeave={handleDateLongPressEnd}
-               onTouchStart={(e) => day && handleDateLongPressStart(day, e)}
+               onTouchStart={(e) => day && dayInPeriod && handleDateLongPressStart(day, e)}
                onTouchEnd={handleDateLongPressEnd}
               >
                 {day && (
@@ -1572,8 +1592,8 @@ export const Calendar: React.FC<CalendarProps> = ({
             marginBottom: '10px'
           }}
         >
-          {/* Month to Date Total - Only show if viewing current month */}
-          {isCurrentMonth && (
+          {/* Month to Date Total - show when viewing current month AND (no period selected OR today is within the period) */}
+          {isCurrentMonth && (!periodStart || !periodEnd || isTodayInPeriod) && (
             <div 
               className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-4"
               style={{
