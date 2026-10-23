@@ -71,15 +71,27 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     let total = 0;
     
     currentShifts.forEach((shiftId: string) => {
+      const shiftKey = `${selectedDate}|${shiftId}`;
+      const mode = shiftModes?.[shiftKey] || 'overtime';
+
+      // Normal shifts are not counted toward salary
+      if (mode === 'normal') return;
+
       // Check custom shifts first
       if (settings?.customShifts) {
         const customShift = settings.customShifts.find(s => s.id === shiftId);
         if (customShift) {
-          // Use manual amount if enabled, otherwise calculate
-          if (customShift.useManualAmount) {
-            total += customShift.manualAmount || 0;
+          if (mode === 'publicHoliday') {
+            // Public holiday: use publicHolidayHours * hourlyRate
+            const phHours = customShift.publicHolidayHours || 0;
+            total += phHours * (settings.hourlyRate || 0);
           } else {
-            total += customShift.hours * (settings.hourlyRate || 0);
+            // Overtime (default): use manual amount or hours * hourlyRate
+            if (customShift.useManualAmount) {
+              total += customShift.manualAmount || 0;
+            } else {
+              total += customShift.hours * (settings.hourlyRate || 0);
+            }
           }
           return;
         }
@@ -94,6 +106,18 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
     });
     
     return total;
+  };
+
+  // Returns true when every selected shift is in 'normal' mode (i.e. not counted)
+  const areAllShiftsNormal = (): boolean => {
+    if (!selectedDate) return false;
+    const currentShifts = localSchedule[selectedDate] || [];
+    if (currentShifts.length === 0) return false;
+    return currentShifts.every((shiftId: string) => {
+      const shiftKey = `${selectedDate}|${shiftId}`;
+      const mode = shiftModes?.[shiftKey] || 'overtime';
+      return mode === 'normal';
+    });
   };
   
   const formatCurrency = (amount: number) => {
@@ -511,9 +535,15 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({
                 <strong>Shift Selection ({(localSchedule[selectedDate] || []).length}/3)</strong>
               </p>
               {(localSchedule[selectedDate] || []).length > 0 && (
-                <p className="text-sm text-indigo-600 text-center mt-1 font-medium">
-                  Total: {formatCurrency(calculateTotalAmount())}
-                </p>
+                areAllShiftsNormal() ? (
+                  <p className="text-sm text-gray-600 text-center mt-1 font-semibold">
+                    Normal Shift
+                  </p>
+                ) : (
+                  <p className="text-sm text-indigo-600 text-center mt-1 font-medium">
+                    Total: {formatCurrency(calculateTotalAmount())}
+                  </p>
+                )
               )}
             </div>
           )}

@@ -288,6 +288,30 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
+    // When a period is active, shift it by its own length instead of moving by calendar month
+    if (periodSelection?.start && periodSelection?.end) {
+      const start = new Date(periodSelection.start);
+      const end = new Date(periodSelection.end);
+      const durationDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const delta = direction === 'next' ? durationDays : -durationDays;
+
+      const newStart = new Date(start);
+      newStart.setDate(newStart.getDate() + delta);
+      const newEnd = new Date(end);
+      newEnd.setDate(newEnd.getDate() + delta);
+
+      const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+      setPeriodSelection({
+        dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
+        start: fmt(newStart),
+        end: fmt(newEnd)
+      });
+
+      // Also advance the viewed month to the new end date's month so the calendar follows
+      setCurrentDate(new Date(newEnd.getFullYear(), newEnd.getMonth(), 1));
+      return;
+    }
     setCurrentDate(new Date(currentYear, currentMonth + (direction === 'next' ? 1 : -1), 1));
   };
 

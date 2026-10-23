@@ -181,11 +181,14 @@ export const Calendar: React.FC<CalendarProps> = ({
   }, []);
 
   // Calculate period total for custom date range
-  const calculatePeriodTotal = useCallback(() => {
+  // When upToToday is true, caps the iteration at today's date (for the "Period (start - Today)" display)
+  const calculatePeriodTotal = useCallback((upToToday: boolean = false) => {
     if (!periodStart || !periodEnd || !settings) return 0;
 
     const start = new Date(periodStart);
     const end = new Date(periodEnd);
+    // For period-to-date display, don't iterate past today
+    const effectiveEnd = upToToday && end > today ? today : end;
     let total = 0;
 
     // Determine effective salary and hourly rate
@@ -202,7 +205,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
     // Iterate through each day in the period
     const current = new Date(start);
-    while (current <= end) {
+    while (current <= effectiveEnd) {
       const dateKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
       const dayShifts = schedule[dateKey] || [];
 
@@ -255,6 +258,8 @@ export const Calendar: React.FC<CalendarProps> = ({
   }, [periodStart, periodEnd, schedule, settings, shiftModes, monthlySalary, today]);
 
   const periodTotal = calculatePeriodTotal();
+  // Period-to-date total: same as periodTotal but capped at today (for the green "Period (start - Today)" box)
+  const periodToDateTotal = calculatePeriodTotal(true);
 
   // Swipe handlers for Monthly Total card
   const handlePeriodSwipeStart = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -1585,7 +1590,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                   </span>
                 </div>
                 <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
-                  {formatCurrency(periodStart && periodEnd ? periodTotal : monthToDateAmount)}
+                  {formatCurrency(periodStart && periodEnd ? periodToDateTotal : monthToDateAmount)}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
