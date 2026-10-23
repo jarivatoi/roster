@@ -996,6 +996,27 @@ export const Calendar: React.FC<CalendarProps> = ({
     return dateStr >= periodStart && dateStr <= periodEnd;
   };
 
+  // Auto-navigate to the period's month when the viewed month has no overlap with the period.
+  // This prevents a blank grid after reload when the persisted period is in a different month.
+  useEffect(() => {
+    if (!periodStart || !periodEnd) return;
+
+    const pStart = new Date(periodStart);
+    const pEnd = new Date(periodEnd);
+
+    // First day and last day of the currently viewed month
+    const viewMonthStart = new Date(currentYear, currentMonth, 1);
+    const viewMonthEnd = new Date(currentYear, currentMonth + 1, 0);
+
+    // Check if viewed month overlaps with the period range
+    const overlaps = viewMonthStart <= pEnd && viewMonthEnd >= pStart;
+
+    if (!overlaps) {
+      // Navigate to the period start's month so at least some days become visible
+      onDateChange(new Date(pStart.getFullYear(), pStart.getMonth(), 1));
+    }
+  }, [periodStart, periodEnd, currentMonth, currentYear]);
+
   // Generate calendar days
   const calendarDays = [];
   
@@ -1064,7 +1085,17 @@ export const Calendar: React.FC<CalendarProps> = ({
         paddingTop: window.innerWidth >= 640 ? '24px' : '16px'
       }}>
         <div className="flex items-center justify-center space-x-3 mb-4">
-          <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
+          <button
+            onClick={() => onDateChange(new Date())}
+            className="flex items-center justify-center rounded-lg hover:bg-indigo-50 active:bg-indigo-100 transition-colors duration-200 p-1"
+            style={{
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent'
+            }}
+            title="Go to today"
+          >
+            <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
+          </button>
           <div className="text-xl sm:text-3xl font-bold text-gray-900 text-center select-none" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
             {scheduleTitle}
           </div>
