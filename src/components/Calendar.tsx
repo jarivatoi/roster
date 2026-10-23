@@ -1606,7 +1606,9 @@ export const Calendar: React.FC<CalendarProps> = ({
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   <span className="text-base sm:text-lg font-semibold text-green-800 select-none">
-                    {periodStart && periodEnd ? `Period (${formatPeriodDate(periodStart)} - Today)` : 'Month to Date'}
+                    {periodStart && periodEnd
+                      ? `Period (${new Date(periodStart).getFullYear() !== today.getFullYear() ? formatPeriodDateWithYear(periodStart) : formatPeriodDate(periodStart)} - Today)`
+                      : 'Month to Date'}
                   </span>
                 </div>
                 <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
@@ -1615,8 +1617,8 @@ export const Calendar: React.FC<CalendarProps> = ({
               </div>
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
-                  ? `Amount earned from ${formatPeriodDate(periodStart)} to Today`
-                  : `Amount earned from start of month to today (${today.getDate()}/${currentMonth + 1}/${currentYear})`
+                  ? `Amount earned from ${new Date(periodStart).getFullYear() !== today.getFullYear() ? formatPeriodDateWithYear(periodStart) : formatPeriodDate(periodStart)} to Today`
+                  : `Amount earned from start of month to today (${today.getDate()}/${currentMonth + 1}/${today.getFullYear()})`
                 }
               </p>
             </div>
@@ -1684,7 +1686,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                   <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
                   <span className="text-base sm:text-lg font-semibold text-indigo-800 select-none">
                     {periodStart && periodEnd
-                      ? `${formatPeriodDate(periodStart)} - ${formatPeriodDate(periodEnd)} (Total)`
+                      ? `${formatPeriodRange(periodStart, periodEnd)} (Total)`
                       : 'Monthly Total'
                     }
                   </span>
