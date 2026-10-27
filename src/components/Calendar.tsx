@@ -1120,7 +1120,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   const handleMonthNavigation = (direction: 'prev' | 'next') => {
     // Navigate by month
     const newMonth = viewStart.getMonth() + (direction === 'next' ? 1 : -1);
-    const newViewStart = new Date(viewStart.getFullYear(), newMonth, 1);
+    let newViewStart = new Date(viewStart.getFullYear(), newMonth, 1);
 
     // Check if the new month overlaps with the current period
     if (periodStart && periodEnd) {
@@ -1158,6 +1158,15 @@ export const Calendar: React.FC<CalendarProps> = ({
           start: fmt(newStart),
           end: fmt(newEnd)
         });
+
+        // If the new period still overlaps with the CURRENT view month,
+        // keep the view on the current month so the remaining dates are shown
+        // before advancing to the next/previous month.
+        const currentMonthStart = new Date(viewStart.getFullYear(), viewStart.getMonth(), 1);
+        const currentMonthEnd = new Date(viewStart.getFullYear(), viewStart.getMonth() + 1, 0);
+        if (currentMonthStart <= newEnd && currentMonthEnd >= newStart) {
+          newViewStart = viewStart;
+        }
       }
     }
 
