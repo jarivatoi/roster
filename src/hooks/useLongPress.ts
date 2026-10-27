@@ -40,7 +40,6 @@ export const useLongPress = ({
     
     timeoutRef.current = setTimeout(() => {
       isLongPressRef.current = true;
-      console.log('🔥 Long press triggered!');
       onLongPress();
     }, delay);
   }, [onLongPress, delay]);
@@ -56,7 +55,6 @@ export const useLongPress = ({
 
   const handlePress = useCallback(() => {
     if (!isLongPressRef.current && onPress) {
-      console.log('👆 Short press triggered!');
       onPress();
     }
     isLongPressRef.current = false;
@@ -77,7 +75,6 @@ export const useLongPress = ({
         clickTimeoutRef.current = null;
       }
       clickCountRef.current = 0;
-      console.log('👆👆 Double click triggered!');
       if (onDoublePress) {
         onDoublePress();
       }
@@ -86,21 +83,18 @@ export const useLongPress = ({
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     if (isTouchStartRef.current) return; // Prevent duplicate if touch already started
-    console.log('🖱️ Mouse down - starting long press timer');
     isMouseDownRef.current = true;
     startLongPress();
   }, [startLongPress]);
 
   const onMouseUp = useCallback(() => {
     if (!isMouseDownRef.current) return;
-    console.log('🖱️ Mouse up');
     cancelLongPress();
     handlePress();
   }, [cancelLongPress, handlePress]);
 
   const onMouseLeave = useCallback(() => {
     if (!isMouseDownRef.current) return;
-    console.log('🖱️ Mouse leave - canceling');
     cancelLongPress();
   }, [cancelLongPress]);
 
@@ -108,21 +102,18 @@ export const useLongPress = ({
     e.preventDefault();
     e.stopPropagation();
     if (isMouseDownRef.current) return; // Prevent duplicate if mouse already started
-    console.log('📱 Touch start - starting long press timer');
     isTouchStartRef.current = true;
     startLongPress();
   }, [startLongPress]);
 
   const onTouchEnd = useCallback(() => {
     if (!isTouchStartRef.current) return;
-    console.log('📱 Touch end');
     cancelLongPress();
     handlePress();
   }, [cancelLongPress, handlePress]);
 
   const onTouchCancel = useCallback(() => {
     if (!isTouchStartRef.current) return;
-    console.log('📱 Touch cancel');
     cancelLongPress();
   }, [cancelLongPress]);
 

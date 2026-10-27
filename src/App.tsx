@@ -289,44 +289,7 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newMonth = currentMonth + (direction === 'next' ? 1 : -1);
-    const newDate = new Date(currentYear, newMonth, 1);
-    const newViewMonthStart = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
-    const newViewMonthEnd = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
-
-    if (periodSelection?.start && periodSelection?.end) {
-      const pStart = new Date(periodSelection.start);
-      const pEnd = new Date(periodSelection.end);
-
-      // Check if the new viewed month overlaps with the current period
-      const overlaps = newViewMonthStart <= pEnd && newViewMonthEnd >= pStart;
-
-      if (!overlaps) {
-        // New month is past the period end → shift forward
-        // New month is before the period start → shift backward
-        const durationDays = Math.round((pEnd.getTime() - pStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        const delta = direction === 'next' ? durationDays : -durationDays;
-
-        const newStart = new Date(pStart);
-        newStart.setDate(newStart.getDate() + delta);
-        const newEnd = new Date(newStart);
-        newEnd.setDate(newEnd.getDate() + durationDays - 1);
-
-        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-        setPeriodSelection({
-          dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
-          start: fmt(newStart),
-          end: fmt(newEnd)
-        });
-
-        // Navigate to the shifted period's start month
-        setCurrentDate(new Date(newStart.getFullYear(), newStart.getMonth(), 1));
-        return;
-      }
-    }
-
-    // Month overlaps with period (or no period) — just change the viewed month
-    setCurrentDate(newDate);
+    setCurrentDate(new Date(currentYear, newMonth, 1));
   };
 
   const handleDateClick = (dateKey: string) => {
@@ -334,30 +297,9 @@ const AuthenticatedApp: React.FC<{ user: UserSession, onLoginSuccess: (sess: { u
     setShowModal(true);
   };
 
-  // Navigate to the period containing today (or today's month if no period is active)
+  // Navigate to today's month (period stays unchanged)
   const handleGoToToday = () => {
-    const today = new Date();
-    if (periodSelection?.start && periodSelection?.end) {
-      const start = new Date(periodSelection.start);
-      const end = new Date(periodSelection.end);
-      const durationDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      const diffDays = Math.round((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      const periodIndex = Math.floor(diffDays / durationDays);
-      const newStart = new Date(start);
-      newStart.setDate(newStart.getDate() + periodIndex * durationDays);
-      const newEnd = new Date(newStart);
-      newEnd.setDate(newEnd.getDate() + durationDays - 1);
-      const formatDate = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      setPeriodSelection({
-        dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
-        start: formatDate(newStart),
-        end: formatDate(newEnd)
-      });
-      setCurrentDate(new Date(newStart.getFullYear(), newStart.getMonth(), 1));
-    } else {
-      setCurrentDate(today);
-    }
+    setCurrentDate(new Date());
   };
 
   const checkTimeOverlap = (shift1Id: string, shift2Id: string): boolean => {

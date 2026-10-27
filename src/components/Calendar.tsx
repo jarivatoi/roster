@@ -94,12 +94,59 @@ export const Calendar: React.FC<CalendarProps> = ({
   const [isPeriodSwiping, setIsPeriodSwiping] = useState(false);
   const periodSwipeStartX = useRef(0);
   const periodSwipeCurrentX = useRef(0);
-  const calendarGridRef = useRef<HTMLDivElement>(null);
+  const calendarGridRef = useRef<HTMLDivElement | null>(null);
   const animatedElementsRef = useRef<Set<HTMLElement>>(new Set());
   
   const today = new Date();
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
+
+  // View window start date — controls which 35-day window the grid shows.
+  // Synced to the period's actual start date when a period is active, so the period
+  // begins on the first row. When no period, follows month navigation (1st of month).
+  const [viewStart, setViewStart] = useState<Date>(() => {
+    if (periodSelection?.start) {
+      // Start from the period's actual start date (not the 1st of the month)
+      const d = new Date(periodSelection.start);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    return new Date(currentYear, currentMonth, 1);
+  });
+
+  // Sync viewStart when the period changes (selected or auto-shifted).
+  // viewStart always represents the 1st of the viewed month.
+  // If the current viewStart month overlaps with the new period, don't override
+  // (this preserves the user's navigation position after auto-shift).
+  useEffect(() => {
+    if (periodSelection?.start) {
+      const d = new Date(periodSelection.start);
+      const periodStartMonth = d.getMonth();
+      const periodStartYear = d.getFullYear();
+      const pe = periodSelection.end ? new Date(periodSelection.end) : d;
+
+      // Check if current viewStart month overlaps with the new period
+      const viewMonthStart = new Date(viewStart.getFullYear(), viewStart.getMonth(), 1);
+      const viewMonthEnd = new Date(viewStart.getFullYear(), viewStart.getMonth() + 1, 0);
+      const overlaps = viewMonthStart <= pe && viewMonthEnd >= d;
+
+      if (!overlaps) {
+        // No overlap — snap to the 1st of the period's start month
+        const target = new Date(periodStartYear, periodStartMonth, 1);
+        setViewStart(prev => prev.getTime() !== target.getTime() ? target : prev);
+      }
+    } else {
+      // Period cleared — snap to 1st of the currently viewed month
+      const first = new Date(viewStart.getFullYear(), viewStart.getMonth(), 1);
+      if (first.getTime() !== viewStart.getTime()) setViewStart(first);
+    }
+  }, [periodSelection?.start]);
+
+  // Sync viewStart when currentDate changes from the parent (e.g. "Go to Today" button).
+  // viewStart always represents the 1st of the viewed month.
+  useEffect(() => {
+    const target = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    setViewStart(prev => prev.getTime() !== target.getTime() ? target : prev);
+  }, [currentDate]);
   
   // Calculate period dates - use stored date strings directly to preserve cross-month selections
   const periodDates = useMemo(() => {
@@ -155,74 +202,34 @@ export const Calendar: React.FC<CalendarProps> = ({
   
   const periodStart = periodDates.start;
   const periodEnd = periodDates.end;
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-  const firstDayWeekday = firstDayOfMonth.getDay();
-  const daysInMonth = lastDayOfMonth.getDate();
 
-  // Compute the visible date range for the current month's grid header.
-  // When the period starts in this month, visible range = periodStart → last day in the 5-row grid.
-  // When the period started in a previous month, visible range = first unseen day → periodEnd.
+  // viewStart is always the 1st of the viewed month (normal calendar behaviour).
+  // The grid shows all days of that month with proper weekday alignment.
+  // Period dates are highlighted; non-period dates are completely hidden.
+  const viewMonth = viewStart.getMonth();
+  const viewYear = viewStart.getFullYear();
+  const viewDaysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const viewFirstWeekday = new Date(viewYear, viewMonth, 1).getDay();
+
+  // Compute the visible period range as the overlap between the full period and the current month view.
+  // This updates as the user navigates between months.
   const visiblePeriodRange = useMemo(() => {
     if (!periodStart || !periodEnd) return null;
     const ps = new Date(periodStart);
     const pe = new Date(periodEnd);
+    const monthStart = new Date(viewYear, viewMonth, 1);
+    const monthEnd = new Date(viewYear, viewMonth, viewDaysInMonth);
+    const overlapStart = ps > monthStart ? ps : monthStart;
+    const overlapEnd = pe < monthEnd ? pe : monthEnd;
+    if (overlapStart > overlapEnd) return null;
     const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-    if (ps.getMonth() === currentMonth && ps.getFullYear() === currentYear) {
-      // Period starts in this month — grid is 35 cells:
-      // leadingNulls + currentMonthDays + overflow = 35
-      const startWeekday = ps.getDay(); // leading nulls for weekday alignment
-      const periodStartDay = ps.getDate();
-      const currentMonthDaysInGrid = daysInMonth - periodStartDay + 1;
-      const overflow = 35 - startWeekday - currentMonthDaysInGrid;
-
-      let endDate: Date;
-      if (overflow > 0) {
-        // Overflow into next month
-        const nextMonth = (currentMonth + 1) % 12;
-        const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-        endDate = new Date(nextMonthYear, nextMonth, overflow);
-      } else {
-        // Grid ends within this month
-        endDate = new Date(currentYear, currentMonth, periodStartDay + 35 - startWeekday - 1);
-      }
-      return { start: periodStart, end: fmt(endDate) };
-    } else {
-      // Period started in a previous month — this month shows the remaining period days.
-      // Compute how many of the previous month's 35-cell grid overflowed into this month.
-      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-      const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-      const prevMonthDays = new Date(prevMonthYear, prevMonth + 1, 0).getDate();
-
-      let prevOverflow = 0;
-      if (ps.getMonth() === prevMonth && ps.getFullYear() === prevMonthYear) {
-        // Period started in the previous month — grid started from periodStart
-        const prevStartWeekday = ps.getDay();
-        const prevCurrentMonthDays = prevMonthDays - ps.getDate() + 1;
-        prevOverflow = Math.max(0, 35 - prevStartWeekday - prevCurrentMonthDays);
-      } else {
-        // Period started even earlier — previous month showed its full grid from day 1
-        const prevMonthFirstWeekday = new Date(prevMonthYear, prevMonth, 1).getDay();
-        prevOverflow = Math.max(0, 35 - prevMonthFirstWeekday - prevMonthDays);
-      }
-
-      // This month's visible range starts after the previous month's overflow.
-      // Days 1..prevOverflow of this month are already visible in the prev grid.
-      const firstUnseenDate = prevOverflow > 0
-        ? new Date(currentYear, currentMonth, prevOverflow + 1)
-        : new Date(currentYear, currentMonth, 1);
-
-      const firstUnseenStr = fmt(firstUnseenDate);
-      if (firstUnseenStr > periodEnd) return null; // nothing visible this month
-      return { start: firstUnseenStr, end: periodEnd };
-    }
-  }, [periodStart, periodEnd, currentMonth, currentYear, daysInMonth]);
+    return { start: fmt(overlapStart), end: fmt(overlapEnd) };
+  }, [periodStart, periodEnd, viewMonth, viewYear, viewDaysInMonth]);
 
   // Only apply global salary to current year ONLY (not past or future)
   // This prevents past years from changing when global salary is updated
-  const isFutureYear = currentYear > today.getFullYear();
-  const isPastYear = currentYear < today.getFullYear();
+  const isFutureYear = viewStart.getFullYear() > today.getFullYear();
+  const isPastYear = viewStart.getFullYear() < today.getFullYear();
   const shouldUseGlobalSalary = monthlySalary === 0 && !isFutureYear && !isPastYear;
 
   const monthNames = [
@@ -346,6 +353,8 @@ export const Calendar: React.FC<CalendarProps> = ({
       // Swipe left → open period picker
       setShowPeriodPicker(true);
       setPeriodPickerStep('start');
+      // Set the picker to show the currently viewed month
+      setPeriodPickerMonth(new Date(viewStart.getFullYear(), viewStart.getMonth(), 1));
     }
     setPeriodSwipeX(0);
   };
@@ -432,8 +441,8 @@ export const Calendar: React.FC<CalendarProps> = ({
     const durationDays = Math.round(durationMs / (1000 * 60 * 60 * 24)) + 1;
     const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-    // Find which interval is closest to the currently viewed month
-    const viewDate = new Date(currentYear, currentMonth, 1);
+    // Find which interval is closest to the currently viewed position
+    const viewDate = new Date(viewStart.getFullYear(), viewStart.getMonth(), viewStart.getDate());
     const diffFromBase = Math.round((viewDate.getTime() - baseStart.getTime()) / (1000 * 60 * 60 * 24));
     const centerIndex = Math.floor(diffFromBase / durationDays);
 
@@ -454,7 +463,7 @@ export const Calendar: React.FC<CalendarProps> = ({
       });
     }
     return intervals;
-  }, [periodStart, periodEnd, currentMonth, currentYear]);
+  }, [periodStart, periodEnd, viewStart]);
 
   // Handle period interval selection from the dropdown
   const handlePeriodIntervalSelect = (startStr: string, endStr: string) => {
@@ -667,8 +676,8 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const formatDateKey = (day: number) => {
-    // Resolve overflow days (e.g. day 32 in Oct → Nov 1) using Date constructor
-    const resolved = new Date(currentYear, currentMonth, day);
+    // Resolve day offset relative to viewStart (day 1 = viewStart date)
+    const resolved = new Date(viewStart.getFullYear(), viewStart.getMonth(), viewStart.getDate() + day - 1);
     const y = resolved.getFullYear();
     const m = (resolved.getMonth() + 1).toString().padStart(2, '0');
     const d = resolved.getDate().toString().padStart(2, '0');
@@ -676,7 +685,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const isToday = (day: number) => {
-    const resolved = new Date(currentYear, currentMonth, day);
+    const resolved = new Date(viewStart.getFullYear(), viewStart.getMonth(), viewStart.getDate() + day - 1);
     const now = new Date();
     return resolved.getFullYear() === now.getFullYear() &&
            resolved.getMonth() === now.getMonth() &&
@@ -685,13 +694,13 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const isPastDate = (day: number) => {
     const now = new Date();
-    const dateToCheck = new Date(currentYear, currentMonth, day);
+    const dateToCheck = new Date(viewStart.getFullYear(), viewStart.getMonth(), viewStart.getDate() + day - 1);
     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return dateToCheck < todayDate;
   };
 
   const getDayOfWeek = (day: number) => {
-    const date = new Date(currentYear, currentMonth, day);
+    const date = new Date(viewStart.getFullYear(), viewStart.getMonth(), viewStart.getDate() + day - 1);
     return date.getDay(); // 0 = Sunday, 6 = Saturday
   };
 
@@ -774,14 +783,14 @@ export const Calendar: React.FC<CalendarProps> = ({
     
     Object.entries(schedule).forEach(([dateKey, dayShifts]) => {
       const workDate = new Date(dateKey);
-      if (workDate.getMonth() === currentMonth && workDate.getFullYear() === currentYear) {
+      if (workDate.getMonth() === viewStart.getMonth() && workDate.getFullYear() === viewStart.getFullYear()) {
         totalShifts += dayShifts.length;
       }
     });
     
     return {
-      month: currentMonth,
-      year: currentYear,
+      month: viewStart.getMonth(),
+      year: viewStart.getFullYear(),
       totalShifts,
       totalAmount: totalAmount
     };
@@ -792,8 +801,8 @@ export const Calendar: React.FC<CalendarProps> = ({
     // Check for shifts in current month
     const hasShifts = Object.entries(schedule).some(([dateKey, dayShifts]) => {
       const workDate = new Date(dateKey);
-      return workDate.getMonth() === currentMonth && 
-             workDate.getFullYear() === currentYear && 
+      return workDate.getMonth() === viewStart.getMonth() && 
+             workDate.getFullYear() === viewStart.getFullYear() && 
              dayShifts.length > 0 && 
              dayShifts.some(shiftId => shiftId.trim() !== '');
     });
@@ -801,16 +810,16 @@ export const Calendar: React.FC<CalendarProps> = ({
     // Check for special dates in current month
     const hasSpecialDates = Object.entries(specialDates).some(([dateKey, isSpecial]) => {
       const workDate = new Date(dateKey);
-      return workDate.getMonth() === currentMonth && 
-             workDate.getFullYear() === currentYear && 
+      return workDate.getMonth() === viewStart.getMonth() && 
+             workDate.getFullYear() === viewStart.getFullYear() && 
              isSpecial === true;
     });
     
     // Check for notes in current month
     const hasNotes = Object.entries(dateNotes).some(([dateKey, note]) => {
       const workDate = new Date(dateKey);
-      return workDate.getMonth() === currentMonth && 
-             workDate.getFullYear() === currentYear && 
+      return workDate.getMonth() === viewStart.getMonth() && 
+             workDate.getFullYear() === viewStart.getFullYear() && 
              note && note.trim() !== '';
     });
     
@@ -863,6 +872,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const handleDatePickerChange = (year: number, month: number) => {
+    setViewStart(new Date(year, month, 1));
     onDateChange(new Date(year, month, 1));
     setShowDatePicker(false);
   };
@@ -1108,21 +1118,64 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const handleMonthNavigation = (direction: 'prev' | 'next') => {
-    onNavigateMonth(direction);
+    // Navigate by month
+    const newMonth = viewStart.getMonth() + (direction === 'next' ? 1 : -1);
+    const newViewStart = new Date(viewStart.getFullYear(), newMonth, 1);
+
+    // Check if the new month overlaps with the current period
+    if (periodStart && periodEnd) {
+      const ps = new Date(periodStart);
+      const pe = new Date(periodEnd);
+      const newMonthEnd = new Date(newViewStart.getFullYear(), newViewStart.getMonth() + 1, 0);
+
+      // No overlap — auto-shift the period to the next/previous occurrence
+      if (newViewStart > pe || newMonthEnd < ps) {
+        const psDate = new Date(ps.getFullYear(), ps.getMonth(), ps.getDate());
+        const peDate = new Date(pe.getFullYear(), pe.getMonth(), pe.getDate());
+        const periodLen = Math.round((peDate.getTime() - psDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+        let newStart: Date, newEnd: Date;
+        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        if (direction === 'next') {
+          // Next period starts the day after the current period ends
+          const nextStart = new Date(pe);
+          nextStart.setDate(nextStart.getDate() + 1);
+          newStart = nextStart;
+          newEnd = new Date(nextStart);
+          newEnd.setDate(newEnd.getDate() + periodLen - 1);
+        } else {
+          // Previous period ends the day before the current period starts
+          const prevEnd = new Date(ps);
+          prevEnd.setDate(prevEnd.getDate() - 1);
+          newEnd = prevEnd;
+          newStart = new Date(prevEnd);
+          newStart.setDate(newStart.getDate() - periodLen + 1);
+        }
+
+        onPeriodChange?.({
+          dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
+          start: fmt(newStart),
+          end: fmt(newEnd)
+        });
+      }
+    }
+
+    setViewStart(newViewStart);
   };
 
-  // Check if current month/year matches today's month/year for month-to-date display
-  const isCurrentMonth = today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+  // Check if the viewed month matches today's month/year for month-to-date display
+  const isCurrentMonth = today.getMonth() === viewStart.getMonth() && today.getFullYear() === viewStart.getFullYear();
 
   // Check if today falls within the selected period range
   const isTodayInPeriod = periodStart && periodEnd
     ? today >= new Date(periodStart) && today <= new Date(periodEnd)
     : false;
 
-  // Check if a given day number (may overflow into next month) falls within the period
+  // Check if a given day offset (1-based from viewStart) falls within the period
   const isDayInPeriod = (day: number): boolean => {
     if (!periodStart || !periodEnd) return true; // no period = all days visible
-    const resolved = new Date(currentYear, currentMonth, day);
+    const resolved = new Date(viewStart.getFullYear(), viewStart.getMonth(), viewStart.getDate() + day - 1);
     const y = resolved.getFullYear();
     const m = (resolved.getMonth() + 1).toString().padStart(2, '0');
     const d = resolved.getDate().toString().padStart(2, '0');
@@ -1130,96 +1183,45 @@ export const Calendar: React.FC<CalendarProps> = ({
     return dateStr >= periodStart && dateStr <= periodEnd;
   };
 
-  // Auto-navigate to the period's start month when the viewed month has NO overlap
-  // with the period. This prevents a blank grid when the period doesn't contain today.
-  // When the viewed month DOES overlap, let the user navigate freely.
-  useEffect(() => {
-    if (!periodStart || !periodEnd) return;
+  // Generate calendar days — always exactly 35 cells (5 rows × 7 cols).
+  // Leading nulls for weekday alignment, period dates in correct positions,
+  // remaining cells filled with nulls to reach 35 total.
+  const TOTAL_CELLS = 35;
+  const calendarDays: (number | null)[] = [];
 
-    const pStart = new Date(periodStart);
-    const pEnd = new Date(periodEnd);
+  if (visiblePeriodRange) {
+    // Period active — show period dates with weekday alignment
+    const vs = new Date(visiblePeriodRange.start);
+    const ve = new Date(visiblePeriodRange.end);
+    const startWeekday = vs.getDay(); // 0=Sun, 6=Sat
 
-    // First day and last day of the currently viewed month
-    const viewMonthStart = new Date(currentYear, currentMonth, 1);
-    const viewMonthEnd = new Date(currentYear, currentMonth + 1, 0);
-
-    // Check if viewed month overlaps with the period range
-    const overlaps = viewMonthStart <= pEnd && viewMonthEnd >= pStart;
-
-    if (!overlaps) {
-      // Navigate to the period start's month so the period dates are visible
-      onDateChange(new Date(pStart.getFullYear(), pStart.getMonth(), 1));
+    // Leading nulls for weekday alignment
+    for (let i = 0; i < startWeekday; i++) {
+      calendarDays.push(null);
     }
-  }, [periodStart, periodEnd, currentMonth, currentYear]);
 
-  // Generate calendar days
-  const calendarDays = [];
+    // Period dates
+    for (let day = vs.getDate(); day <= ve.getDate(); day++) {
+      calendarDays.push(day);
+    }
 
-  // When a period is active, determine where the grid should start.
-  const periodStartsInCurrentMonth = periodStart && periodEnd && (() => {
-    const ps = new Date(periodStart);
-    return ps.getMonth() === currentMonth && ps.getFullYear() === currentYear;
-  })();
-
-  // When the period started in a previous month, compute the first day of THIS month
-  // that wasn't already visible in the previous month's grid overflow.
-  const periodStartedInPrevMonth = periodStart && periodEnd && !periodStartsInCurrentMonth && (() => {
-    const ps = new Date(periodStart);
-    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    return ps.getMonth() === prevMonth && ps.getFullYear() === prevMonthYear;
-  })();
-
-  let gridStartDay = 1;
-  let gridLeadingNulls = firstDayWeekday;
-
-  if (periodStartsInCurrentMonth) {
-    const periodStartDay = new Date(periodStart).getDate();
-    gridStartDay = periodStartDay;
-    gridLeadingNulls = new Date(periodStart).getDay();
-  } else if (periodStartedInPrevMonth) {
-    // Previous month's grid overflowed into this month.
-    // Start from the first day NOT already visible in that overflow.
-    const ps = new Date(periodStart);
-    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    const prevMonthDays = new Date(prevMonthYear, prevMonth + 1, 0).getDate();
-    const prevStartWeekday = ps.getDay();
-    const prevCurrentMonthDays = prevMonthDays - ps.getDate() + 1;
-    const prevOverflow = Math.max(0, 35 - prevStartWeekday - prevCurrentMonthDays);
-    if (prevOverflow > 0) {
-      gridStartDay = prevOverflow + 1;
-      // Weekday alignment for the new start day
-      gridLeadingNulls = new Date(currentYear, currentMonth, gridStartDay).getDay();
+    // Fill remaining cells with nulls to reach 35 total
+    while (calendarDays.length < TOTAL_CELLS) {
+      calendarDays.push(null);
+    }
+  } else {
+    // No period — show all days of the viewed month with weekday alignment
+    for (let i = 0; i < viewFirstWeekday; i++) {
+      calendarDays.push(null);
+    }
+    for (let day = 1; day <= viewDaysInMonth; day++) {
+      calendarDays.push(day);
+    }
+    // Fill remaining cells with nulls to reach 35 total
+    while (calendarDays.length < TOTAL_CELLS) {
+      calendarDays.push(null);
     }
   }
-
-  // Empty cells for weekday alignment before the first displayed day
-  for (let i = 0; i < gridLeadingNulls; i++) {
-    calendarDays.push(null);
-  }
-
-  // Days of the month (starting from the computed offset)
-  for (let day = gridStartDay; day <= daysInMonth; day++) {
-    calendarDays.push(day);
-  }
-
-  // When the period starts in the current month, fill remaining cells with next-month days
-  // so the grid always shows exactly 5 rows. Out-of-period days are hidden by visibility.
-  // When the period starts in a previous month, don't add next-month days — only the
-  // remaining period days in this month are visible, rest are hidden.
-  if (periodStartsInCurrentMonth) {
-    const totalCurrentCells = calendarDays.length;
-    const targetCells = 35; // 5 rows × 7 columns
-    const nextMonthDaysToAdd = Math.max(0, targetCells - totalCurrentCells);
-    for (let i = 1; i <= nextMonthDaysToAdd; i++) {
-      calendarDays.push(daysInMonth + i);
-    }
-  }
-
-  // Calculate number of rows needed
-  const totalCells = calendarDays.length;
-  const numberOfRows = Math.ceil(totalCells / 7);
   
   // Calculate square cell size based on viewport width
   const getCellSize = () => {
@@ -1273,7 +1275,12 @@ export const Calendar: React.FC<CalendarProps> = ({
       }}>
         <div className="flex items-center justify-center space-x-3 mb-4">
           <button
-            onClick={() => onGoToToday ? onGoToToday() : onDateChange(new Date())}
+            onClick={() => {
+              const now = new Date();
+              setViewStart(new Date(now.getFullYear(), now.getMonth(), 1));
+              onDateChange(now);
+              if (onGoToToday) onGoToToday();
+            }}
             className="flex items-center justify-center rounded-lg hover:bg-indigo-50 active:bg-indigo-100 transition-colors duration-200 p-1"
             style={{
               touchAction: 'manipulation',
@@ -1328,12 +1335,12 @@ export const Calendar: React.FC<CalendarProps> = ({
               }}
             >
               <span className="select-none">
-                {visiblePeriodRange
-                  ? formatPeriodRange(visiblePeriodRange.start, visiblePeriodRange.end)
-                  : periodStart && periodEnd
-                    ? formatPeriodRange(periodStart, periodEnd)
-                    : `${monthNames[currentMonth]} ${currentYear}`
-                }
+                {`${monthNames[viewStart.getMonth()]} ${viewStart.getFullYear()}`}
+                {periodStart && periodEnd && (
+                  <span className="block text-xs sm:text-sm font-normal text-gray-500 mt-0.5">
+                    {formatPeriodRange(periodStart, periodEnd)}
+                  </span>
+                )}
               </span>
             </button>
           </div>
@@ -1519,8 +1526,8 @@ export const Calendar: React.FC<CalendarProps> = ({
                     <div>
                       <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px', textAlign: 'center' }}>Year</label>
                       <select
-                        value={currentYear}
-                        onChange={(e) => handleDatePickerChange(Number(e.target.value), currentMonth)}
+                        value={viewStart.getFullYear()}
+                        onChange={(e) => handleDatePickerChange(Number(e.target.value), viewStart.getMonth())}
                         style={{
                           width: '100%',
                           padding: '8px 12px',
@@ -1531,7 +1538,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                           touchAction: 'manipulation'
                         }}
                       >
-                        {Array.from({ length: 10 }, (_, i) => currentYear - 5 + i).map(year => (
+                        {Array.from({ length: 10 }, (_, i) => viewStart.getFullYear() - 5 + i).map(year => (
                           <option key={year} value={year}>{year}</option>
                         ))}
                       </select>
@@ -1539,8 +1546,8 @@ export const Calendar: React.FC<CalendarProps> = ({
                     <div>
                       <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px', textAlign: 'center' }}>Month</label>
                       <select
-                        value={currentMonth}
-                        onChange={(e) => handleDatePickerChange(currentYear, Number(e.target.value))}
+                        value={viewStart.getMonth()}
+                        onChange={(e) => handleDatePickerChange(viewStart.getFullYear(), Number(e.target.value))}
                         style={{
                           width: '100%',
                           padding: '8px 12px',
@@ -1561,7 +1568,7 @@ export const Calendar: React.FC<CalendarProps> = ({
 
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px', textAlign: 'center' }}>
-                    Salary for {monthNames[currentMonth]} {currentYear}
+                    Salary for {monthNames[viewStart.getMonth()]} {viewStart.getFullYear()}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -1575,7 +1582,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                       onBlur={() => {
                         if (onMonthlySalaryChange && tempMonthlySalary) {
                           const salary = parseInt(tempMonthlySalary, 10) || 0;
-                          onMonthlySalaryChange(currentYear, currentMonth, salary);
+                          onMonthlySalaryChange(viewStart.getFullYear(), viewStart.getMonth(), salary);
                         }
                       }}
                       style={{
@@ -1692,13 +1699,17 @@ export const Calendar: React.FC<CalendarProps> = ({
           }}
         >
           {calendarDays.map((day, index) => {
-            const rowIndex = Math.floor(index / 7);
-            const dayDateKey = day ? formatDateKey(day) : undefined;
-            const dayShifts = day ? getDayShifts(day) : [];
-            const hasSpecialDate = day ? isSpecialDate(day) : false;
-            const todayDate = day ? isToday(day) : false;
-            const pastDate = day ? isPastDate(day) : false;
-            const dayInPeriod = day ? isDayInPeriod(day) : false;
+            // Null cell — render empty invisible cell for grid alignment
+            if (day === null) {
+              return <div key={index} className="day-box" style={{ minHeight: `${cellSize}px` }} />;
+            }
+
+            const dayDateKey = formatDateKey(day);
+            const dayShifts = getDayShifts(day);
+            const hasSpecialDate = isSpecialDate(day);
+            const todayDate = isToday(day);
+            const pastDate = isPastDate(day);
+            const dayInPeriod = isDayInPeriod(day);
 
             return (
               <div
@@ -1706,11 +1717,11 @@ export const Calendar: React.FC<CalendarProps> = ({
                 data-day={day}
                 data-date-key={dayDateKey}
                 className={`day-box p-1 sm:p-2 rounded-lg border-2 transition-colors duration-200 overflow-hidden relative select-none ${
-                  day && dayInPeriod
+                  dayInPeriod
                     ? todayDate
                       ? `cursor-pointer border-indigo-400 shadow-lg bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-200` // TODAY: Permanent hover state
                       : `cursor-pointer hover:border-indigo-400 hover:shadow-lg bg-yellow-50 border-yellow-200 hover:bg-yellow-100 active:bg-yellow-200`
-                    : 'border-transparent'
+                    : 'border-transparent opacity-30' // Out-of-period: greyed out
                 }`}
                 style={{
                   userSelect: 'none',
@@ -1718,17 +1729,14 @@ export const Calendar: React.FC<CalendarProps> = ({
                   display: 'flex',
                   flexDirection: 'column',
                   minHeight: `${cellSize}px`, // Square size (width = height) but can grow with content
-                  // Hide cells that are out of the selected period
-                  visibility: (day && !dayInPeriod) ? 'hidden' : 'visible'
                 }}
-                onClick={() => day && dayInPeriod && handleDateClick(day)}
-               onMouseDown={(e) => day && dayInPeriod && handleDateLongPressStart(day, e)}
+                onClick={() => dayInPeriod && handleDateClick(day)}
+               onMouseDown={(e) => dayInPeriod && handleDateLongPressStart(day, e)}
                onMouseUp={handleDateLongPressEnd}
                onMouseLeave={handleDateLongPressEnd}
-               onTouchStart={(e) => day && dayInPeriod && handleDateLongPressStart(day, e)}
+               onTouchStart={(e) => dayInPeriod && handleDateLongPressStart(day, e)}
                onTouchEnd={handleDateLongPressEnd}
               >
-                {day && (
                   <div className="flex flex-col select-none h-full">
                     {/* BIG X WATERMARK for past dates */}
                     {isPastDate(day) && (
@@ -1757,7 +1765,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                           </div>
                         )}
                         <span className="relative z-10 select-none">
-                          {day > daysInMonth ? day - daysInMonth : day}
+                          {day}
                         </span>
                         
                         {/* TICK INDICATOR for dates with shifts */}
@@ -1827,7 +1835,6 @@ export const Calendar: React.FC<CalendarProps> = ({
                       )}
                     </div>
                   </div>
-                )}
               </div>
             );
           })}
@@ -1870,7 +1877,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
                   ? `Amount earned from ${new Date(periodStart).getFullYear() !== today.getFullYear() ? formatPeriodDateWithYear(periodStart) : formatPeriodDate(periodStart)} to Today`
-                  : `Amount earned from start of month to today (${today.getDate()}/${currentMonth + 1}/${today.getFullYear()})`
+                  : `Amount earned from start of month to today (${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()})`
                 }
               </p>
             </div>
@@ -1950,7 +1957,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               <p className="text-xs sm:text-sm text-indigo-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
                   ? `Total amount for period ${formatPeriodRange(periodStart, periodEnd)}`
-                  : `Total amount for all scheduled shifts in ${monthNames[currentMonth]} ${currentYear}`
+                  : `Total amount for all scheduled shifts in ${monthNames[viewStart.getMonth()]} ${viewStart.getFullYear()}`
                 }
               </p>
             </div>
@@ -1975,8 +1982,8 @@ export const Calendar: React.FC<CalendarProps> = ({
       {/* Clear Month Modal */}
       <ClearMonthModal
         isOpen={showClearMonthModal}
-        selectedMonth={currentMonth}
-        selectedYear={currentYear}
+        selectedMonth={viewStart.getMonth()}
+        selectedYear={viewStart.getFullYear()}
         onConfirm={handleClearMonth}
         onCancel={() => setShowClearMonthModal(false)}
       />
@@ -1994,8 +2001,8 @@ export const Calendar: React.FC<CalendarProps> = ({
         isOpen={showClearSelectionModal}
         periodStart={periodStart}
         periodEnd={periodEnd}
-        currentMonth={currentMonth}
-        currentYear={currentYear}
+        currentMonth={viewStart.getMonth()}
+        currentYear={viewStart.getFullYear()}
         hasPeriodData={hasPeriodData()}
         onClearMonth={() => {
           setShowClearSelectionModal(false);
