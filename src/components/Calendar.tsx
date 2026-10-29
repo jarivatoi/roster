@@ -96,6 +96,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   const periodSwipeCurrentX = useRef(0);
   const calendarGridRef = useRef<HTMLDivElement | null>(null);
   const animatedElementsRef = useRef<Set<HTMLElement>>(new Set());
+  const masterTimelineRef = useRef<gsap.core.Timeline | null>(null);
   const initialPeriodShiftDone = useRef(false);
   
   const today = new Date();
@@ -578,146 +579,156 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   // Enhanced TweenMax animations with smooth easing
   useEffect(() => {
-    if (calendarGridRef.current) {
-      // Clear previous animated elements
-      animatedElementsRef.current.clear();
-      
-      // Get all day boxes and sort them by day number
-      const dayBoxes = Array.from(calendarGridRef.current.querySelectorAll('.day-box'))
-        .filter(box => box.getAttribute('data-day') !== null)
-        .sort((a, b) => {
-          const dayA = parseInt(a.getAttribute('data-day') || '0');
-          const dayB = parseInt(b.getAttribute('data-day') || '0');
-          return dayA - dayB;
-        });
-      
-      // Set initial state with hardware acceleration
-      gsap.set(dayBoxes, {
+    if (!calendarGridRef.current) return;
+
+    // Kill any running timeline and tweens before starting fresh
+    if (masterTimelineRef.current) {
+      masterTimelineRef.current.kill();
+      masterTimelineRef.current = null;
+    }
+    const grid = calendarGridRef.current;
+    gsap.killTweensOf(grid.querySelectorAll('.day-box, .shift-text, .special-text'));
+
+    // Clear previous animated elements
+    animatedElementsRef.current.clear();
+
+    // Get all day boxes and sort them by day number
+    const dayBoxes = Array.from(grid.querySelectorAll('.day-box'))
+      .filter(box => box.getAttribute('data-day') !== null)
+      .sort((a, b) => {
+        const dayA = parseInt(a.getAttribute('data-day') || '0');
+        const dayB = parseInt(b.getAttribute('data-day') || '0');
+        return dayA - dayB;
+      });
+
+    // Set initial state with hardware acceleration
+    gsap.set(dayBoxes, {
+      opacity: 0,
+      x: 30,
+      scale: 0.95,
+      force3D: true,
+      transformOrigin: "center center"
+    });
+
+    // Set initial state for shift texts
+    const shiftTexts = grid.querySelectorAll('.shift-text');
+    if (shiftTexts.length > 0) {
+      gsap.set(shiftTexts, {
         opacity: 0,
-        x: 30,  // Slide from right
-        scale: 0.95,
-        force3D: true,  // Force hardware acceleration
-        transformOrigin: "center center"
-      });
-
-      // Set initial state for shift texts (avoid interfering with ScrollingText)
-      const shiftTexts = calendarGridRef.current.querySelectorAll('.shift-text');
-      if (shiftTexts.length > 0) {
-        gsap.set(shiftTexts, {
-          opacity: 0,
-          x: 10,  // Slide from right
-          scale: 0.9,
-          force3D: true
-        });
-      }
-
-      // Set initial state for special text (avoid interfering with ScrollingText)
-      const specialTexts = calendarGridRef.current.querySelectorAll('.special-text');
-      if (specialTexts.length > 0) {
-        gsap.set(specialTexts, {
-          opacity: 0,
-          scale: 0.9,
-          x: 15,  // Slide from right
-          force3D: true
-        });
-      }
-
-      // Create master timeline with smooth TweenMax-style easing
-      const masterTl = gsap.timeline({
-        defaults: {
-          ease: "power2.out",  // Smooth TweenMax-style easing
-          force3D: true
-        }
-      });
-
-      // Animate boxes with staggered entrance
-      dayBoxes.forEach((box, index) => {
-        const dayNumber = parseInt(box.getAttribute('data-day') || '0');
-        const shiftElements = box.querySelectorAll('.shift-text');
-        const specialElements = box.querySelectorAll('.special-text');
-        
-        // Add to animated elements tracking
-        animatedElementsRef.current.add(box as HTMLElement);
-        
-        // Smooth sequence timing
-        const delay = (dayNumber - 1) * 0.04; // 40ms between each day
-        
-        // Animate the main box with smooth entrance
-        masterTl.to(box, {
-          opacity: 1,
-          x: 0,  // Slide to final position
-          scale: 1,
-          duration: 0.6,
-          delay: delay,
-          ease: "back.out(1.2)" // Smooth bounce-back effect
-        }, 0);
-
-        // Animate shift texts (without interfering with ScrollingText)
-        if (shiftElements.length > 0) {
-          shiftElements.forEach(el => animatedElementsRef.current.add(el as HTMLElement));
-          masterTl.to(shiftElements, {
-            opacity: 1,
-            x: 0,  // Slide to final position
-            scale: 1,
-            duration: 0.4,
-            stagger: 0.06,
-            ease: "power2.out"
-          }, delay + 0.1);
-        }
-
-        // Animate special texts (without interfering with ScrollingText)
-        if (specialElements.length > 0) {
-          specialElements.forEach(el => animatedElementsRef.current.add(el as HTMLElement));
-          masterTl.to(specialElements, {
-            opacity: 1,
-            x: 0,  // Slide to final position
-            scale: 1,
-            duration: 0.4,
-            ease: "elastic.out(1, 0.5)" // Gentle elastic effect
-          }, delay + 0.15);
-        }
-      });
-      
-      // Add hover animations for interactive elements
-      dayBoxes.forEach(box => {
-        const dayElement = box as HTMLElement;
-        
-        // Hover enter animation
-        dayElement.addEventListener('mouseenter', () => {
-          if (animatedElementsRef.current.has(dayElement)) {
-            gsap.to(dayElement, {
-              scale: 1.02,
-              duration: 0.2,
-              ease: "power2.out"
-            });
-          }
-        });
-        
-        // Hover leave animation
-        dayElement.addEventListener('mouseleave', () => {
-          if (animatedElementsRef.current.has(dayElement)) {
-            gsap.to(dayElement, {
-              scale: 1,
-              duration: 0.2,
-              ease: "power2.out"
-            });
-          }
-        });
-        
-        // Click animation
-        dayElement.addEventListener('click', () => {
-          if (animatedElementsRef.current.has(dayElement)) {
-            gsap.to(dayElement, {
-              scale: 0.98,
-              duration: 0.1,
-              ease: "power2.out",
-              yoyo: true,
-              repeat: 1
-            });
-          }
-        });
+        x: 10,
+        scale: 0.9,
+        force3D: true
       });
     }
+
+    // Set initial state for special text
+    const specialTexts = grid.querySelectorAll('.special-text');
+    if (specialTexts.length > 0) {
+      gsap.set(specialTexts, {
+        opacity: 0,
+        scale: 0.9,
+        x: 15,
+        force3D: true
+      });
+    }
+
+    // Create master timeline with smooth TweenMax-style easing
+    const masterTl = gsap.timeline({
+      defaults: {
+        ease: "power2.out",
+        force3D: true
+      }
+    });
+    masterTimelineRef.current = masterTl;
+
+    // Animate boxes with staggered entrance
+    dayBoxes.forEach((box) => {
+      const dayNumber = parseInt(box.getAttribute('data-day') || '0');
+      const shiftElements = box.querySelectorAll('.shift-text');
+      const specialElements = box.querySelectorAll('.special-text');
+
+      animatedElementsRef.current.add(box as HTMLElement);
+
+      const delay = (dayNumber - 1) * 0.04;
+
+      masterTl.to(box, {
+        opacity: 1,
+        x: 0,
+        scale: 1,
+        duration: 0.6,
+        delay: delay,
+        ease: "back.out(1.2)"
+      }, 0);
+
+      if (shiftElements.length > 0) {
+        shiftElements.forEach(el => animatedElementsRef.current.add(el as HTMLElement));
+        masterTl.to(shiftElements, {
+          opacity: 1,
+          x: 0,
+          scale: 1,
+          duration: 0.4,
+          stagger: 0.06,
+          ease: "power2.out"
+        }, delay + 0.1);
+      }
+
+      if (specialElements.length > 0) {
+        specialElements.forEach(el => animatedElementsRef.current.add(el as HTMLElement));
+        masterTl.to(specialElements, {
+          opacity: 1,
+          x: 0,
+          scale: 1,
+          duration: 0.4,
+          ease: "elastic.out(1, 0.5)"
+        }, delay + 0.15);
+      }
+    });
+
+    // Add hover animations for interactive elements
+    dayBoxes.forEach(box => {
+      const dayElement = box as HTMLElement;
+
+      dayElement.addEventListener('mouseenter', () => {
+        if (animatedElementsRef.current.has(dayElement)) {
+          gsap.to(dayElement, {
+            scale: 1.02,
+            duration: 0.2,
+            ease: "power2.out"
+          });
+        }
+      });
+
+      dayElement.addEventListener('mouseleave', () => {
+        if (animatedElementsRef.current.has(dayElement)) {
+          gsap.to(dayElement, {
+            scale: 1,
+            duration: 0.2,
+            ease: "power2.out"
+          });
+        }
+      });
+
+      dayElement.addEventListener('click', () => {
+        if (animatedElementsRef.current.has(dayElement)) {
+          gsap.to(dayElement, {
+            scale: 0.98,
+            duration: 0.1,
+            ease: "power2.out",
+            yoyo: true,
+            repeat: 1
+          });
+        }
+      });
+    });
+
+    // Cleanup: kill timeline when effect re-runs or component unmounts
+    return () => {
+      if (masterTimelineRef.current) {
+        masterTimelineRef.current.kill();
+        masterTimelineRef.current = null;
+      }
+      gsap.killTweensOf(grid.querySelectorAll('.day-box, .shift-text, .special-text'));
+    };
   }, [currentDate, viewStart, schedule, specialDates]);
 
   // Close modal on escape key - EXACTLY LIKE SHIFT MODAL
