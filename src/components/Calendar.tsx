@@ -718,7 +718,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         });
       });
     }
-  }, [currentDate, schedule, specialDates]);
+  }, [currentDate, viewStart, schedule, specialDates]);
 
   // Close modal on escape key - EXACTLY LIKE SHIFT MODAL
   useEffect(() => {
