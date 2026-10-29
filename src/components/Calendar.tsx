@@ -96,6 +96,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   const periodSwipeCurrentX = useRef(0);
   const calendarGridRef = useRef<HTMLDivElement | null>(null);
   const animatedElementsRef = useRef<Set<HTMLElement>>(new Set());
+  const initialPeriodShiftDone = useRef(false);
   
   const today = new Date();
   const currentMonth = currentDate.getMonth();
@@ -147,6 +148,46 @@ export const Calendar: React.FC<CalendarProps> = ({
     const target = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     setViewStart(prev => prev.getTime() !== target.getTime() ? target : prev);
   }, [currentDate]);
+
+  // Auto-shift the period to include today on initial load.
+  // If the stored period doesn't contain today, shift it forward/backward
+  // by its own duration until the interval containing today is found.
+  useEffect(() => {
+    if (initialPeriodShiftDone.current) return;
+    const pStart = periodSelection?.start;
+    const pEnd = periodSelection?.end;
+    if (!pStart || !pEnd || !onPeriodChange) return;
+
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayStr = fmt(today);
+
+    // Today is already in the period — nothing to do
+    if (todayStr >= pStart && todayStr <= pEnd) {
+      initialPeriodShiftDone.current = true;
+      return;
+    }
+
+    initialPeriodShiftDone.current = true;
+
+    const ps = new Date(pStart);
+    const pe = new Date(pEnd);
+    const durationDays = Math.round((pe.getTime() - ps.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Calculate which interval contains today
+    const diffFromToday = Math.round((today.getTime() - ps.getTime()) / (1000 * 60 * 60 * 24));
+    const intervalIndex = Math.floor(diffFromToday / durationDays);
+
+    const newStart = new Date(ps);
+    newStart.setDate(newStart.getDate() + intervalIndex * durationDays);
+    const newEnd = new Date(newStart);
+    newEnd.setDate(newEnd.getDate() + durationDays - 1);
+
+    onPeriodChange({
+      dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
+      start: fmt(newStart),
+      end: fmt(newEnd)
+    });
+  }, [periodSelection?.start, periodSelection?.end, onPeriodChange]);
   
   // Calculate period dates - use stored date strings directly to preserve cross-month selections
   const periodDates = useMemo(() => {
@@ -202,6 +243,36 @@ export const Calendar: React.FC<CalendarProps> = ({
   
   const periodStart = periodDates.start;
   const periodEnd = periodDates.end;
+
+  // Helper: shift the stored period to the interval that contains today.
+  // Called from the "Go to Today" button so the period always covers today.
+  const shiftPeriodToIncludeToday = useCallback(() => {
+    if (!periodStart || !periodEnd || !onPeriodChange) return;
+
+    const now = new Date();
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayStr = fmt(now);
+
+    if (todayStr >= periodStart && todayStr <= periodEnd) return;
+
+    const ps = new Date(periodStart);
+    const pe = new Date(periodEnd);
+    const durationDays = Math.round((pe.getTime() - ps.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    const diffFromToday = Math.round((now.getTime() - ps.getTime()) / (1000 * 60 * 60 * 24));
+    const intervalIndex = Math.floor(diffFromToday / durationDays);
+
+    const newStart = new Date(ps);
+    newStart.setDate(newStart.getDate() + intervalIndex * durationDays);
+    const newEnd = new Date(newStart);
+    newEnd.setDate(newEnd.getDate() + durationDays - 1);
+
+    onPeriodChange({
+      dayOffsets: { startDay: newStart.getDate(), endDay: newEnd.getDate() },
+      start: fmt(newStart),
+      end: fmt(newEnd)
+    });
+  }, [periodStart, periodEnd, onPeriodChange]);
 
   // viewStart is always the 1st of the viewed month (normal calendar behaviour).
   // The grid shows all days of that month with proper weekday alignment.
@@ -1285,6 +1356,8 @@ export const Calendar: React.FC<CalendarProps> = ({
         <div className="flex items-center justify-center space-x-3 mb-4">
           <button
             onClick={() => {
+              // Ensure the period interval covers today before navigating
+              shiftPeriodToIncludeToday();
               const now = new Date();
               setViewStart(new Date(now.getFullYear(), now.getMonth(), 1));
               onDateChange(now);
@@ -1949,20 +2022,37 @@ export const Calendar: React.FC<CalendarProps> = ({
                 zIndex: 2
               }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-                  <span className="text-base sm:text-lg font-semibold text-indigo-800 select-none">
-                    {periodStart && periodEnd
-                      ? `${formatPeriodRange(periodStart, periodEnd)} (Total)`
-                      : 'Monthly Total'
-                    }
-                  </span>
-                </div>
-                <span className="text-lg sm:text-2xl font-bold text-indigo-900 select-none">
-                  {formatCurrency(periodStart && periodEnd ? periodTotal : totalAmount)}
-                </span>
-              </div>
+              {periodStart && periodEnd ? (
+                <>
+                  {/* Period mode: stack label and amount vertically */}
+                  <div className="flex items-center justify-center mb-1">
+                    <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 mr-2" />
+                    <span className="text-base sm:text-lg font-semibold text-indigo-800 select-none">
+                      {formatPeriodRange(periodStart, periodEnd)} (Total)
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-lg sm:text-2xl font-bold text-indigo-900 select-none">
+                      {formatCurrency(periodTotal)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Monthly mode: side-by-side layout */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                      <span className="text-base sm:text-lg font-semibold text-indigo-800 select-none">
+                        Monthly Total
+                      </span>
+                    </div>
+                    <span className="text-lg sm:text-2xl font-bold text-indigo-900 select-none">
+                      {formatCurrency(totalAmount)}
+                    </span>
+                  </div>
+                </>
+              )}
               <p className="text-xs sm:text-sm text-indigo-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
                   ? `Total amount for period ${formatPeriodRange(periodStart, periodEnd)}`
