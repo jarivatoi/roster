@@ -1943,19 +1943,37 @@ export const Calendar: React.FC<CalendarProps> = ({
                 touchAction: 'pan-y'
               }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                  <span className="text-base sm:text-lg font-semibold text-green-800 select-none">
-                    {periodStart && periodEnd
-                      ? `Period (${new Date(periodStart).getFullYear() !== today.getFullYear() ? formatPeriodDateWithYear(periodStart) : formatPeriodDate(periodStart)} - Today)`
-                      : 'Month to Date'}
-                  </span>
-                </div>
-                <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
-                  {formatCurrency(periodStart && periodEnd ? periodToDateTotal : monthToDateAmount)}
-                </span>
-              </div>
+              {periodStart && periodEnd ? (
+                <>
+                  {/* Period mode: stack label and amount vertically */}
+                  <div className="flex items-center justify-center mb-1">
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 mr-2" />
+                    <span className="text-base sm:text-lg font-semibold text-green-800 select-none">
+                      Period ({new Date(periodStart).getFullYear() !== today.getFullYear() ? formatPeriodDateWithYear(periodStart) : formatPeriodDate(periodStart)} - Today)
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
+                      {formatCurrency(periodToDateTotal)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Month-to-date mode: side-by-side layout */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                      <span className="text-base sm:text-lg font-semibold text-green-800 select-none">
+                        Month to Date
+                      </span>
+                    </div>
+                    <span className="text-lg sm:text-2xl font-bold text-green-900 select-none">
+                      {formatCurrency(monthToDateAmount)}
+                    </span>
+                  </div>
+                </>
+              )}
               <p className="text-xs sm:text-sm text-green-600 mt-2 text-center select-none">
                 {periodStart && periodEnd
                   ? `Amount earned from ${new Date(periodStart).getFullYear() !== today.getFullYear() ? formatPeriodDateWithYear(periodStart) : formatPeriodDate(periodStart)} to Today`
