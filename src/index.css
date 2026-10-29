@@ -53,6 +53,12 @@ html, body {
   -webkit-touch-callout: none;
 }
 
+/* Prevent text selection on all interactive elements */
+button, [role="button"], a, label {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Prevent zoom on input focus (iOS) */
 input[type="text"],
 input[type="number"],
